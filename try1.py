@@ -19,8 +19,8 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed):
         first_line = f.readline()
         for i, line in enumerate(f):
             userId, movieId, rating, timestamp = line.split(',')
-            userId = int(userId)
-            movieId = int(movieId)
+            #userId = int(userId)
+            #movieId = int(movieId)
             rating = float(rating)
 
             if k == random.randint(0, M):
@@ -163,6 +163,7 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         model_name = para['model_name'] if 'model_name' in para else 'tmp_model'
 
         list_of_list = convert_2_level_dict_to_list_of_list(data)
+        #print 'list_of_list:', list_of_list
 
         print 'start training'
         self.model = gensim.models.Word2Vec(list_of_list, min_count=1)
@@ -182,11 +183,11 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
 
         #user history dict
         user_history = {x: data[x].keys() for x in data}
-        print 'user_history:', user_history
+        #print 'user_history:', user_history
 
         #user repre dict
         user_repre = {uesr_id: np.average(map(lambda item: self.model[item], user_history[uesr_id]), axis=0) for uesr_id in user_history}
-        print 'user_repre:', user_repre
+        #print 'user_repre:', user_repre
 
         #
         #calculate final similarity matrix W
@@ -256,7 +257,8 @@ def main():
 
     rs.setup({'train': train})
     
-    for N in xrange(3, 50):
+    for N in xrange(10, 11):
+    #for N in xrange(3, 50):
         print 'N:', N
 
         recall = rs.recall(train, test, N)
@@ -264,6 +266,15 @@ def main():
         precision = rs.precision(train, test, N)
         print 'precision:', precision
 
+    ###
+    rs = RecommendatorViaWord2Vec()
+    rs.setup({'data': train, 'model_name': 'main_model'})
+
+    N = 10
+    recall = rs.recall(train, test, N)
+    print 'recall:', recall
+    precision = rs.precision(train, test, N)
+    print 'precision:', precision
 
 def function(sentences):
     assert(False)
@@ -303,8 +314,8 @@ def test():
     #test = {'A': {'a': 1, 'b': 1, 'd': 1}, }
     test = {'A': {'c': 1}, }
 
-    list_of_list = convert_2_level_dict_to_list_of_list(train)
-    print 'list_of_list:', list_of_list
+    #list_of_list = convert_2_level_dict_to_list_of_list(train)
+    #print 'list_of_list:', list_of_list
 
     rs = RecommendatorViaWord2Vec()
     rs.setup({'data': train, 'model_name': 'test_model'})
@@ -317,5 +328,5 @@ def test():
 
 
 if __name__ == '__main__':
-    #main()
-    test()
+    main()
+    #test()
