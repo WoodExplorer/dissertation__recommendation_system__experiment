@@ -2,6 +2,7 @@
 
 import math
 import random
+import csv
 
 class RecommendatorSystem(object):
     """docstring for RecommendatorSystem"""
@@ -16,13 +17,36 @@ class RecommendatorSystem(object):
         test = []
         train = []
         random.seed(seed)
-        for user, item in data:
+        for user, item in data.items():
             if k == random.randint(0, M):
                 test.append([user, item])
             else:
                 train.append([user, item])
         return train, test
 
+    def extract_data_from_file_and_generate_train_and_test(self, filename, M, k, seed):
+        test = {}
+        train = {}
+        random.seed(seed)
+
+        with open(filename , 'r') as f:
+            first_line = f.readline()
+            for i, line in enumerate(f):
+                userId, movieId, rating, timestamp = line.split(',')
+                userId = int(userId)
+                movieId = int(movieId)
+                rating = float(rating)
+
+                if k == random.randint(0, M):
+                    if userId not in test:
+                        test[userId] = {}
+                    test[userId][movieId] = rating
+                else:
+                    if userId not in train:
+                        train[userId] = {}
+                    train[userId][movieId] = rating
+
+        return train, test
 
     def user_similarity(self, train):
         #build inverse table item_users
@@ -61,13 +85,12 @@ class RecommendatorSystem(object):
                 W[u][v] = C[u][v] / math.sqrt(N[u] * N[v])
         self.W = W
 
-    def recommend(self, u, train, N=10):
-        if self.W is None:
-            self.user_similarity(train)
-
+    def recommend(self, u, train, N, K=10):
+        '''@N: number of user neighbors considered
+        '''
         rank = {}
         interacted_items = train[u]
-        for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:N]: # wuv: similarity between user u and user v
+        for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
             for i, rvi in train[v].items(): # rvi: rate of item by user v
                 if i in interacted_items:
                     #do not recommend items which user u interacted before
@@ -76,7 +99,10 @@ class RecommendatorSystem(object):
                 if i not in rank:
                     rank[i] = 0.0
                 rank[i] += wuv * rvi
-        return rank
+
+        rank = rank.items()
+        rank.sort(key=lambda x: x[1], reverse=True)
+        return rank[:N]
 
 
     def recall(self, train, test, N):
@@ -86,7 +112,7 @@ class RecommendatorSystem(object):
             tu = test[user]
             rank = self.recommend(user, train, N)
             #print 'rank:', rank
-            for item, pui in rank.items():
+            for item, pui in rank:
                 if item in tu:
                     hit += 1
             all += len(tu)
@@ -99,10 +125,10 @@ class RecommendatorSystem(object):
         for user in test.keys():
             tu = test[user]
             rank = self.recommend(user, train, N)
-            for item, pui in rank.items():
+            for item, pui in rank:
                 if item in tu:
                     hit += 1
-            all += len(rank.keys()) #Note: In book RSP, the author used 'all += N'
+            all += len(rank) #Note: In book RSP, the author used 'all += N'
         return hit / (all * 1.0)
 
 
@@ -112,7 +138,59 @@ def print_matrix(M):
     map(lambda x: print_wrapper(x), M)
 
 
+#def extract_data():
+#    filename = 'ml-latest-small\\ratings.csv'
+#    data = {}
+#
+#    with open(filename , 'r') as f:
+#        first_line = f.readline()
+#        for i, line in enumerate(f):
+#            userId, movieId, rating, timestamp = line.split(',')
+#            userId = int(userId)
+#            movieId = int(movieId)
+#            rating = float(rating)
+#
+#            if userId not in data:
+#                data[userId] = {}
+#            data[userId][movieId] = rating
+#
+#            if 10 == i:
+#                break
+#
+#    #print data
+#    return data
+#
+#
+#    #csvfile = file(filename, 'r')
+#    #reader = csv.reader(csvfile)
+#    #
+#    #for line in reader:
+#    #    print line
+#    #
+#    #csvfile.close() 
+
+
 def main():
+    #data = extract_data()
+    filename = 'ml-latest-small\\ratings.csv'
+
+    rs = RecommendatorSystem()
+    seed = 2
+    
+    train, test = rs.extract_data_from_file_and_generate_train_and_test(filename, 2, 0, seed)
+
+    rs.user_similarity(train)
+    
+    for N in xrange(3, 50):
+        print 'N:', N
+
+        recall = rs.recall(train, test, N)
+        print 'recall:', recall
+        precision = rs.precision(train, test, N)
+        print 'precision:', precision
+
+
+def test():
     train = {'A': {'a': 1, 'b': 1, 'd': 1},
         'B': {'a': 1, 'c': 1},
         'C': {'b': 1, 'e': 1},
@@ -123,7 +201,6 @@ def main():
 
 
     rs = RecommendatorSystem()
-
 
     u = 'A'
     N = 10
