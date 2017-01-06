@@ -161,12 +161,17 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
     def setup(self, para):
         data = para['data']
         model_name = para['model_name'] if 'model_name' in para else 'tmp_model'
+        num_features = para['num_features']
+        min_count = para['min_count']
+        window = para['window']
+
+        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window)]))
 
         list_of_list = convert_2_level_dict_to_list_of_list(data)
         #print 'list_of_list:', list_of_list
 
         print 'start training'
-        self.model = gensim.models.Word2Vec(list_of_list, min_count=1)
+        self.model = gensim.models.Word2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
         print 'training finished'
 
         # If you don't plan to train the model any further, calling 
@@ -268,7 +273,12 @@ def main():
 
     ###
     rs = RecommendatorViaWord2Vec()
-    rs.setup({'data': train, 'model_name': 'main_model'})
+    rs.setup({'data': train, 
+        'model_name': 'main_model',
+        'num_features': 500,
+        'min_count': 1,
+        'window': 20,
+    })
 
     N = 10
     recall = rs.recall(train, test, N)
