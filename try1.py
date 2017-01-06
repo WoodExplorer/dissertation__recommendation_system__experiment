@@ -10,7 +10,7 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
-def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed):
+def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, delimiter):
     test = {}
     train = {}
     random.seed(seed)
@@ -18,7 +18,7 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed):
     with open(filename , 'r') as f:
         first_line = f.readline()
         for i, line in enumerate(f):
-            userId, movieId, rating, timestamp = line.split(',')
+            userId, movieId, rating, timestamp = line.split(delimiter)
             #userId = int(userId)
             #movieId = int(movieId)
             rating = float(rating)
@@ -213,6 +213,67 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         
 
 
+class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
+    """docstring for RecommendatorViaDoc2Vec"""
+    def __init__(self):
+        super(RecommendatorViaDoc2Vec, self).__init__()
+        #self.model = None
+        self.W = None
+
+    def setup(self, para):
+        data = para['data']
+        model_name = para['model_name'] if 'model_name' in para else 'tmp_model'
+        num_features = para['num_features']
+        min_count = para['min_count']
+        window = para['window']
+
+        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window)]))
+
+        list_of_list = convert_2_level_dict_to_list_of_LabeledSentence(data)
+        #print 'list_of_list:', list_of_list
+
+        print 'start training'
+        self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
+        print 'training finished'
+
+        # If you don't plan to train the model any further, calling 
+        # init_sims will make the model much more memory-efficient.
+        self.model.init_sims(replace=True)
+
+        # It can be helpful to create a meaningful model name and 
+        # save the model for later use. You can load it later using Word2Vec.load()
+        self.model.save(model_name)
+
+        #
+        #user set
+        user_id_set = data.keys()
+
+        #user history dict
+        user_history = {x: data[x].keys() for x in data}
+        #print 'user_history:', user_history
+
+        #user repre dict
+        user_repre = {uesr_id: np.average(map(lambda item: self.model[item], filter(lambda x: x in self.model, user_history[uesr_id])), axis=0) for uesr_id in user_history}
+        #print 'user_repre:', user_repre
+
+        #
+        #calculate final similarity matrix W
+        W = {}
+        for u in user_id_set:
+            for v in user_id_set:
+                if u == v:
+                    continue
+
+                simi = user_repre[u].dot(user_repre[v]) / (la.norm(user_repre[u] * la.norm(user_repre[v])))
+                if u not in W:
+                    W[u] = {}
+                W[u][v] = simi
+                if v not in W:
+                    W[v] = {}
+                W[v][u] = simi
+        self.W = W
+        
+
 def print_matrix(M):
     def print_wrapper(x):
         print x, M[x]
@@ -253,30 +314,46 @@ def print_matrix(M):
 
 def main():
     #data = extract_data()
-    filename = 'ml-latest-small\\ratings.csv'
+    #data_filename, delimiter = 'ml-latest-small\\ratings.csv', ','
+    data_filename, delimiter = 'ml-1m\\ratings.dat', '::'
 
-    rs = RecommendatorSystemViaCollaborativeFiltering()
-    seed = 2
-    
-    train, test = extract_data_from_file_and_generate_train_and_test(filename, 2, 0, seed)
+    seed = 2 
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
 
-    rs.setup({'train': train})
-    
-    for N in xrange(10, 11):
-    #for N in xrange(3, 50):
-        print 'N:', N
-
-        recall = rs.recall(train, test, N)
-        print 'recall:', recall
-        precision = rs.precision(train, test, N)
-        print 'precision:', precision
+#    rs = RecommendatorSystemViaCollaborativeFiltering()
+#
+#    rs.setup({'train': train})
+#    
+#    for N in xrange(10, 11):
+#    #for N in xrange(3, 50):
+#        print 'N:', N
+#
+#        recall = rs.recall(train, test, N)
+#        print 'recall:', recall
+#        precision = rs.precision(train, test, N)
+#        print 'precision:', precision
 
     ###
-    rs = RecommendatorViaWord2Vec()
+#    rs = RecommendatorViaWord2Vec()
+#    rs.setup({'data': train, 
+#        'model_name': 'main_model',
+#        'num_features': 100,
+#        'min_count': 1,
+#        'window': 20,
+#    })
+
+#    N = 10
+#    recall = rs.recall(train, test, N)
+#    print 'recall:', recall
+#    precision = rs.precision(train, test, N)
+#    print 'precision:', precision
+
+    ###
+    rs = RecommendatorViaDoc2Vec()
     rs.setup({'data': train, 
-        'model_name': 'main_model',
-        'num_features': 500,
-        'min_count': 1,
+        'model_name': data_filename + '_' + 'main_doc2vec_model',
+        'num_features': 100,
+        'min_count': 3,
         'window': 20,
     })
 
@@ -314,6 +391,10 @@ def function(sentences):
 
 def convert_2_level_dict_to_list_of_list(data):
     return [data[x].keys() for x in data]
+
+
+def convert_2_level_dict_to_list_of_LabeledSentence(data):
+    return [gensim.models.doc2vec.LabeledSentence(data[x].keys(), [x]) for x in data]
 
 def test():
     train = {'A': {'a': 1, 'b': 1, 'd': 1},
