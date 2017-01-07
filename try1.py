@@ -1,5 +1,6 @@
 ﻿# -*- coding: utf-8 -*-  
 
+import redis
 import os
 import gensim#from gensim.models import word2vec
 import math
@@ -138,6 +139,80 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         rank = {}
         interacted_items = train[u]
         for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
+            for i, rvi in train[v].items(): # rvi: rate of item by user v
+                if i in interacted_items:
+                    #do not recommend items which user u interacted before
+                    continue
+
+                if i not in rank:
+                    rank[i] = 0.0
+                rank[i] += wuv * rvi
+
+        rank = rank.items()
+        rank.sort(key=lambda x: x[1], reverse=True)
+        return rank[:N]
+
+
+class RecommendatorSystemViaCollaborativeFiltering_UsingRedis(RecommendatorSystemViaCollaborativeFiltering):
+    """docstring for RecommendatorSystemViaCollaborativeFiltering_UsingRedis"""
+    def __init__(self):
+        super(RecommendatorSystemViaCollaborativeFiltering_UsingRedis, self).__init__()
+        
+        #
+        self.my_redis = redis.Redis(host='localhost', port=6379, db=0) 
+
+    def setup(self, para):
+        self.user_similarity(para['train'])
+
+    def user_similarity(self, train):
+        #build inverse table item_users
+        item_users = {}
+        for u, items in train.items():
+            for i in items.keys():
+                if i not in item_users:
+                    item_users[i] = set()
+                item_users[i].add(u)
+
+        #calculate co-rated items between users
+        C = {}
+        #C_prefix = 'C_'
+
+        N = {}
+        for i, users in item_users.items():
+            for u in users:
+                if u not in N:
+                    N[u] = 0
+                N[u] += 1
+
+                for v in users:
+                    if u == v:
+                        continue
+
+                    if u not in C:
+                        C[u] = {}
+                    if v not in C[u]:
+                        C[u][v] = 0
+                    C[u][v] += 1
+        print 'C matrix calculated.'
+
+
+        #calculate final similarity matrix W
+        #W = {}
+        W_key = 'W'
+        for u, related_users in C.items():
+            for v, cuv in related_users.items():
+                self.my_redis.hset(u, v, C[u][v] / math.sqrt(N[u] * N[v]))
+                
+
+    def recommend(self, u, train, N, K=10):
+        '''@N: number of user neighbors considered
+        '''
+        rank = {}
+        interacted_items = train[u]
+
+        W_u = self.my_redis.hgetall(u)
+        
+        for v, wuv in sorted(map(lambda (x, y): (x, float(y)), W_u.items()), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
             for i, rvi in train[v].items(): # rvi: rate of item by user v
                 if i in interacted_items:
                     #do not recommend items which user u interacted before
@@ -321,7 +396,8 @@ def main():
     seed = 2 
     train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
 
-    rs = RecommendatorSystemViaCollaborativeFiltering()
+    #rs = RecommendatorSystemViaCollaborativeFiltering()
+    rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
 
     rs.setup({'train': train})
     
