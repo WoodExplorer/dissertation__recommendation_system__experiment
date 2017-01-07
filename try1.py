@@ -1,5 +1,6 @@
 ﻿# -*- coding: utf-8 -*-  
 
+import os
 import gensim#from gensim.models import word2vec
 import math
 import random
@@ -314,24 +315,24 @@ def print_matrix(M):
 
 def main():
     #data = extract_data()
-    #data_filename, delimiter = 'ml-latest-small\\ratings.csv', ','
-    data_filename, delimiter = 'ml-1m\\ratings.dat', '::'
+    data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
 
     seed = 2 
     train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
 
-#    rs = RecommendatorSystemViaCollaborativeFiltering()
-#
-#    rs.setup({'train': train})
-#    
-#    for N in xrange(10, 11):
-#    #for N in xrange(3, 50):
-#        print 'N:', N
-#
-#        recall = rs.recall(train, test, N)
-#        print 'recall:', recall
-#        precision = rs.precision(train, test, N)
-#        print 'precision:', precision
+    rs = RecommendatorSystemViaCollaborativeFiltering()
+
+    rs.setup({'train': train})
+    
+    for N in xrange(10, 11):
+    #for N in xrange(3, 50):
+        print 'N:', N
+
+        recall = rs.recall(train, test, N)
+        print 'recall:', recall
+        precision = rs.precision(train, test, N)
+        print 'precision:', precision
 
     ###
 #    rs = RecommendatorViaWord2Vec()
@@ -349,19 +350,19 @@ def main():
 #    print 'precision:', precision
 
     ###
-    rs = RecommendatorViaDoc2Vec()
-    rs.setup({'data': train, 
-        'model_name': data_filename + '_' + 'main_doc2vec_model',
-        'num_features': 100,
-        'min_count': 3,
-        'window': 20,
-    })
-
-    N = 10
-    recall = rs.recall(train, test, N)
-    print 'recall:', recall
-    precision = rs.precision(train, test, N)
-    print 'precision:', precision
+#    rs = RecommendatorViaDoc2Vec()
+#    rs.setup({'data': train, 
+#        'model_name': data_filename + '_' + 'main_doc2vec_model',
+#        'num_features': 300,
+#        'min_count': 3,
+#        'window': 20,
+#    })
+#
+#    N = 10
+#    recall = rs.recall(train, test, N)
+#    print 'recall:', recall
+#    precision = rs.precision(train, test, N)
+#    print 'precision:', precision
 
 def function(sentences):
     assert(False)
