@@ -1,6 +1,19 @@
 ﻿# -*- coding: utf-8 -*-  
 
-import redis
+import platform
+ 
+def isWindowsSystem():
+    return 'Windows' in platform.system()
+ 
+def isLinuxSystem():
+    return 'Linux' in platform.system()
+ 
+if isWindowsSystem():
+    pass
+
+if isLinuxSystem():
+    import redis
+
 import os
 import gensim#from gensim.models import word2vec
 import math
@@ -8,9 +21,26 @@ import random
 import csv
 import numpy as np
 from numpy import linalg as la
+import heapq
 import logging
+
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
+
+def get_least_numbers_big_data(self, alist, k):
+    max_heap = []
+    length = len(alist)
+    if not alist or k <= 0 or k > length:
+        return
+    k = k - 1
+    for ele in alist:
+        ele = -ele
+        if len(max_heap) <= k:
+            heapq.heappush(max_heap, ele)
+        else:
+            heapq.heappushpop(max_heap, ele)
+
+    return map(lambda x:-x, max_heap)
 
 def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, delimiter):
     test = {}
@@ -93,45 +123,58 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         self.W = None   # weight matrix / user similarity matrix
 
     def setup(self, para):
-        self.user_similarity(para['train'])
+        train = para['train']
+
+        # K
+        self.K = para['K']
+
+        # prepare list of all distinct items
+        item_set = set()
+        for user, items in train.items():
+            item_set.update(items)
+        self.distinct_item_list = list(item_set)
+
+        self.user_similarity(train)
+
 
 
     def user_similarity(self, train):
         #build inverse table item_users
-        item_users = {}
-        for u, items in train.items():
-            for i in items.keys():
-                if i not in item_users:
-                    item_users[i] = set()
-                item_users[i].add(u)
+        print 'This is RecommendatorSystemViaCollaborativeFiltering'
+        
 
-        #calculate co-rated items between users
-        C = {}
-        N = {}
-        for i, users in item_users.items():
-            for u in users:
-                if u not in N:
-                    N[u] = 0
-                N[u] += 1
+        ###
+        #
+        #user set
+        user_id_set = train.keys()
 
-                for v in users:
-                    if u == v:
-                        continue
+        #user history dict
+        #user_history = {x: data[x].keys() for x in data}
+        #print 'user_history:', user_history
+        user_history = train
 
-                    if u not in C:
-                        C[u] = {}
-                    if v not in C[u]:
-                        C[u][v] = 0
-                    C[u][v] += 1
-
+        #
         #calculate final similarity matrix W
         W = {}
-        for u, related_users in C.items():
-            for v, cuv in related_users.items():
-                if u not in W:
-                    W[u] = {}
-                W[u][v] = C[u][v] / math.sqrt(N[u] * N[v])
+        for u in user_id_set:
+            simi_list_of_user_u = []
+            for v in user_id_set:
+                if u == v:
+                    continue
+
+                user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, self.distinct_item_list))
+                user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, self.distinct_item_list))
+                
+                simi = user_u_repr.dot(user_v_repr) / (la.norm(user_u_repr * la.norm(user_v_repr)))
+                
+                #
+                simi_list_of_user_u.append((v, simi))
+
+                #
+            K_neighbors = heapq.nlargest(self.K, simi_list_of_user_u, key=lambda s: s[1])
+            W[u] = dict(K_neighbors)
         self.W = W
+        
 
     def recommend(self, u, train, N, K=10):
         '''@N: number of user neighbors considered
@@ -388,8 +431,28 @@ def print_matrix(M):
 #    #csvfile.close() 
 
 
-def main():
-    #data = extract_data()
+def main_windows():
+    data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+
+    seed = 2 
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+
+    rs = RecommendatorSystemViaCollaborativeFiltering()
+    K = 10
+    
+    for N in xrange(10, 11):
+    #for N in xrange(3, 50):
+        print 'N:', N
+
+
+        rs.setup({'train': train, 'K': K})
+
+        recall = rs.recall(train, test, N)
+        print 'recall:', recall
+        precision = rs.precision(train, test, N)
+        print 'precision:', precision
+
+def main_Linux():
     data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
     data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
     data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
@@ -440,6 +503,16 @@ def main():
     print 'recall:', recall
     precision = rs.precision(train, test, N)
     print 'precision:', precision
+
+def main():
+    if isWindowsSystem():
+        main_windows()
+        return
+
+    if isLinuxSystem():
+        main_Linux()
+        return
+
 
 def function(sentences):
     assert(False)

@@ -45,3 +45,11 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+main_doc2vec_modelnum_features=100_min_count=3_window=20
+main_doc2vec_modelnum_features=300_min_count=2_window=20
+main_modelnum_features=300_min_count=1_window=10
+main_modelnum_features=100_min_count=1_window=20
+main_modelnum_features=300_min_count=1_window=20
+main_doc2vec_modelnum_features=300_min_count=3_window=20
+main_doc2vec_modelnum_features=300_min_count=1_window=20
+main_modelnum_features=500_min_count=1_window=20
