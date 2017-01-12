@@ -128,13 +128,8 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         # K
         self.K = para['K']
 
-        # prepare list of all distinct items
-        item_set = set()
-        for user, items in train.items():
-            item_set.update(items)
-        self.distinct_item_list = list(item_set)
-
         self.user_similarity(train)
+
 
 
 
@@ -156,23 +151,47 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         #
         #calculate final similarity matrix W
         W = {}
-        for u in user_id_set:
+        total = len(user_id_set)
+        for step, u in enumerate(user_id_set):
+            user_u_history = set(train[u].keys())
             simi_list_of_user_u = []
             for v in user_id_set:
                 if u == v:
                     continue
 
-                user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, self.distinct_item_list))
-                user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, self.distinct_item_list))
-                
-                simi = user_u_repr.dot(user_v_repr) / (la.norm(user_u_repr * la.norm(user_v_repr)))
-                
-                #
+                user_v_history = set(train[v].keys())
+                #user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, self.distinct_item_list))
+                #user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, self.distinct_item_list))
+                #common_items = user_u_history.intersection(user_v_history)
+                common_items = user_u_history.union(user_v_history)
+
+                if 0 == len(common_items):
+                    simi = 0
+                else:
+                    #print_matrix(train[u])
+
+                    user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, common_items))
+                    user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, common_items))
+
+                    #print 'user_u_repr:', user_u_repr
+                    #print 'user_v_repr:', user_v_repr
+                    simi = user_u_repr.dot(user_v_repr) / (la.norm(user_u_repr * la.norm(user_v_repr)))
+                    #raw_input()
+
+                    #
                 simi_list_of_user_u.append((v, simi))
 
                 #
             K_neighbors = heapq.nlargest(self.K, simi_list_of_user_u, key=lambda s: s[1])
+            #print 'K_neighbors:', K_neighbors
+            #raw_input()
             W[u] = dict(K_neighbors)
+            #print 'W[u]', W[u]
+            #raw_input()
+
+            if (0 == step % 64):
+                print 'progress: %d/%d' % (step, total)
+        print 'progress: %d/%d. done.' % (step, total)
         self.W = W
         
 
@@ -559,8 +578,15 @@ def test():
     #list_of_list = convert_2_level_dict_to_list_of_list(train)
     #print 'list_of_list:', list_of_list
 
-    rs = RecommendatorViaWord2Vec()
-    rs.setup({'data': train, 'model_name': 'test_model'})
+    #rs = RecommendatorViaWord2Vec()
+    #rs.setup({'data': train, 'model_name': 'test_model'})
+
+
+    rs = RecommendatorSystemViaCollaborativeFiltering()
+    rs.setup({'train': train, 'K': 10})
+
+    print 'rs.W:'
+    print_matrix(rs.W)
 
     N = 10
     recall = rs.recall(train, test, N)
