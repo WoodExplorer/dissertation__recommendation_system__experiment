@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-  
+# -*- coding: utf-8 -*-  
 
 import platform
  
@@ -182,7 +182,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
                 simi_list_of_user_u.append((v, simi))
 
                 #
-            K_neighbors = heapq.nlargest(self.K, simi_list_of_user_u, key=lambda s: s[1])
+            K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
             #print 'K_neighbors:', K_neighbors
             #raw_input()
             W[u] = dict(K_neighbors)
@@ -303,7 +303,9 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         min_count = para['min_count']
         window = para['window']
 
-        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window)]))
+        self.K = para['K']
+
+        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window)]) + '.model')
 
         list_of_list = convert_2_level_dict_to_list_of_list(data)
         #print 'list_of_list:', list_of_list
@@ -335,18 +337,28 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         #
         #calculate final similarity matrix W
         W = {}
-        for u in user_id_set:
+        total = len(user_id_set)
+        for step, u in enumerate(user_id_set):
+            simi_list_of_user_u = []
             for v in user_id_set:
                 if u == v:
                     continue
 
                 simi = user_repre[u].dot(user_repre[v]) / (la.norm(user_repre[u] * la.norm(user_repre[v])))
-                if u not in W:
-                    W[u] = {}
-                W[u][v] = simi
-                if v not in W:
-                    W[v] = {}
-                W[v][u] = simi
+                
+                simi_list_of_user_u.append((v, simi))
+
+                #
+            K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
+            #print 'K_neighbors:', K_neighbors
+            #raw_input()
+            W[u] = dict(K_neighbors)
+            #print 'W[u]', W[u]
+            #raw_input()
+
+            if (0 == step % 64):
+                print 'progress: %d/%d' % (step, total)
+        print 'progress: %d/%d. done.' % (step, total)
         self.W = W
         
 
@@ -365,22 +377,30 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
         min_count = para['min_count']
         window = para['window']
 
-        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window)]))
+        self.K = para['K']
+
+        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window)]) + '.model')
 
         list_of_list = convert_2_level_dict_to_list_of_LabeledSentence(data)
         #print 'list_of_list:', list_of_list
 
-        print 'start training'
-        self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
-        print 'training finished'
+        tricky__load_model = False # tricky flag used to skip calculation of model from scratch and load model from file
+        if tricky__load_model:
+            print 'start training'
+            self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
+            print 'training finished'
 
-        # If you don't plan to train the model any further, calling 
-        # init_sims will make the model much more memory-efficient.
-        self.model.init_sims(replace=True)
+            # If you don't plan to train the model any further, calling 
+            # init_sims will make the model much more memory-efficient.
+            self.model.init_sims(replace=True)
 
-        # It can be helpful to create a meaningful model name and 
-        # save the model for later use. You can load it later using Word2Vec.load()
-        self.model.save(model_name)
+            # It can be helpful to create a meaningful model name and 
+            # save the model for later use. You can load it later using Word2Vec.load()
+            self.model.save(model_name)
+        else:
+            self.model = gensim.models.Word2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20')
+            #self.model = gensim.models.Word2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=300_min_count=3_window=20')
+            
 
         #
         #user set
@@ -396,19 +416,31 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
 
         #
         #calculate final similarity matrix W
+        
+
         W = {}
-        for u in user_id_set:
+        total = len(user_id_set)
+        for step, u in enumerate(user_id_set):
+            simi_list_of_user_u = []
             for v in user_id_set:
                 if u == v:
                     continue
 
                 simi = user_repre[u].dot(user_repre[v]) / (la.norm(user_repre[u] * la.norm(user_repre[v])))
-                if u not in W:
-                    W[u] = {}
-                W[u][v] = simi
-                if v not in W:
-                    W[v] = {}
-                W[v][u] = simi
+                
+                simi_list_of_user_u.append((v, simi))
+
+                #
+            K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
+            #print 'K_neighbors:', K_neighbors
+            #raw_input()
+            W[u] = dict(K_neighbors)
+            #print 'W[u]', W[u]
+            #raw_input()
+
+            if (0 == step % 64):
+                print 'progress: %d/%d' % (step, total)
+        print 'progress: %d/%d. done.' % (step, total)
         self.W = W
         
 
@@ -451,30 +483,85 @@ def print_matrix(M):
 
 
 def main_windows():
-    data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    mode_dict = {
+        1: 'RecommendatorSystemViaCollaborativeFiltering',
+        2: 'RecommendatorViaWord2Vec',
+        3: 'RecommendatorViaDoc2Vec',
+    }
+    print mode_dict
+    mode = int(raw_input('Please select mode:'))
+    if 1 == mode:
+        data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
 
-    seed = 2 
-    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+        seed = 2 
+        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
 
-    rs = RecommendatorSystemViaCollaborativeFiltering()
-    K = 10
-    
-    for N in xrange(10, 11):
-    #for N in xrange(3, 50):
-        print 'N:', N
+        rs = RecommendatorSystemViaCollaborativeFiltering()
+        K = 10
+        
+        for N in xrange(10, 11):
+        #for N in xrange(3, 50):
+            print 'N:', N
 
 
-        rs.setup({'train': train, 'K': K})
+            rs.setup({'train': train, 'K': K})
 
+            recall = rs.recall(train, test, N)
+            print 'recall:', recall
+            precision = rs.precision(train, test, N)
+            print 'precision:', precision
+    elif 2 == mode:
+        data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+        #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
+        #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+
+        K = 10
+        seed = 2 
+        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+
+        rs = RecommendatorViaWord2Vec()
+        rs.setup({'data': train, 
+            'model_name': data_filename + '_' + 'main_word2vec_model',
+            'num_features': 100,
+            'min_count': 1,
+            'window': 5,
+            'K': K,
+        })
+
+        N = 10
+        recall = rs.recall(train, test, N)
+        print 'recall:', recall
+        precision = rs.precision(train, test, N)
+        print 'precision:', precision
+    elif 3 == mode:
+        data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+        #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
+        #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+
+        K = 10
+        seed = 2 
+        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+
+        rs = RecommendatorViaDoc2Vec()
+        rs.setup({'data': train, 
+            'model_name': data_filename + '_' + 'main_doc2vec_model',
+            'num_features': 100,
+            'min_count': 3,
+            'window': 20,
+            'K': K,
+        })
+
+        N = 10
         recall = rs.recall(train, test, N)
         print 'recall:', recall
         precision = rs.precision(train, test, N)
         print 'precision:', precision
 
+
 def main_Linux():
     data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-    data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
-    data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
 
     seed = 2 
     train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
@@ -555,7 +642,7 @@ def function(sentences):
 
     # It can be helpful to create a meaningful model name and 
     # save the model for later use. You can load it later using Word2Vec.load()
-    model_name = "300features_40minwords_10context"
+    model_name = "300features_40minwords_10context.model"
     model.save(model_name)
 
 
