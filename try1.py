@@ -26,8 +26,9 @@ import multiprocessing
 #from multiprocessing.dummy import Pool as ThreadPool
 import datetime
 import logging
-import threading
-import thread
+#import threading
+#import thread
+import cPickle
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -134,21 +135,21 @@ class RecommendatorSystem(object):
         return metric
 
 class InnerThreadClass(multiprocessing.Process):
-    def __init__(self, train, target_user_id_list, K, resultQueue):
+    def __init__(self, name, train, target_user_id_list, K):
         multiprocessing.Process.__init__(self)
 
         self.target_user_id_list = target_user_id_list
         self.whole_user_id_list = train.keys()
         self.train = train
-        #self.W = {}
+        self.W = {}
         self.K = K
-        self.resultQueue = resultQueue
+        self.name = name
 
         self.total = len(target_user_id_list)
  
     def run(self):
         map(lambda (step, u): self.inner(step, u), enumerate(self.target_user_id_list)) 
-
+        cPickle.dump(self.W, open(self.name, 'w'))
         print 'done'
 
     def inner(self, step, u):
@@ -188,8 +189,7 @@ class InnerThreadClass(multiprocessing.Process):
 
 
 
-        #self.W[u] = dict(K_neighbors)
-        self.resultQueue.put((u, dict(K_neighbors)))
+        self.W[u] = dict(K_neighbors)
         
 
 
@@ -258,10 +258,12 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         pieces = [user_id_list[x * piece_len: (x + 1) * piece_len] for x in xrange(0, num + 1)]
 
 
-        results = multiprocessing.Queue()
         # 创建线程对象
-        for x in pieces:
-            threads.append(InnerThreadClass(train, x, self.K, results))
+        name_prefix = 'thread-'
+        name_postfix = '.dump'
+        for en, x in enumerate(pieces):
+            name = name_prefix + str(en) + name_postfix
+            threads.append(InnerThreadClass(name, train, x, self.K))
         for t in threads:
             t.start()
         for t in threads:
@@ -272,12 +274,8 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         print 'progress: %d/%d. done.' % (total, total)
 
         #
-        W_pieces = []
-        while not results.empty():
-            W_pieces.append(results.get())
-
+        W_pieces = [cPickle.load(open(name, 'r')) for name in [name_prefix + str(en) + name_postfix for en, x in enumerate(pieces)]]
         W = {}
-        
         map(lambda x: W.update(x), W_pieces)
         self.W = W
 
