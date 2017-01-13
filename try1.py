@@ -385,7 +385,7 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
         #print 'list_of_list:', list_of_list
 
         tricky__load_model = False # tricky flag used to skip calculation of model from scratch and load model from file
-        if tricky__load_model:
+        if not tricky__load_model:
             print 'start training'
             self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
             print 'training finished'
@@ -559,9 +559,9 @@ def main_windows():
 
 
 def main_Linux():
-    data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
     #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
-    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
 
     seed = 2 
     train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
@@ -596,15 +596,18 @@ def main_Linux():
 #    print 'precision:', precision
 
     ###
+    N = 10
+    K = 10
+
     rs = RecommendatorViaDoc2Vec()
     rs.setup({'data': train, 
         'model_name': data_filename + '_' + 'main_doc2vec_model',
         'num_features': 300,
         'min_count': 3,
         'window': 20,
+        'K': K,
     })
 
-    N = 10
     recall = rs.recall(train, test, N)
     print 'recall:', recall
     precision = rs.precision(train, test, N)
