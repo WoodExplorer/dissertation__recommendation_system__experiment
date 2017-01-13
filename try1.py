@@ -22,7 +22,12 @@ import csv
 import numpy as np
 from numpy import linalg as la
 import heapq
+import multiprocessing
+#from multiprocessing.dummy import Pool as ThreadPool
+import datetime
 import logging
+import threading
+import thread
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -90,6 +95,8 @@ class RecommendatorSystem(object):
 
 
     def recall(self, train, test, N):
+        starttime = datetime.datetime.now()
+
         hit = 0
         all = 0
         for user in test.keys():
@@ -100,10 +107,16 @@ class RecommendatorSystem(object):
                 if item in tu:
                     hit += 1
             all += len(tu)
-        return hit / (all * 1.0)
+        metric = hit / (all * 1.0)
 
+        endtime = datetime.datetime.now()
+        interval = (endtime - starttime).seconds
+        print 'recall: time consumption: %d' % (interval)
+        return metric
 
     def precision(self, train, test, N):
+        starttime = datetime.datetime.now()
+
         hit = 0
         all = 0
         for user in test.keys():
@@ -113,7 +126,75 @@ class RecommendatorSystem(object):
                 if item in tu:
                     hit += 1
             all += len(rank) #Note: In book RSP, the author used 'all += N'
-        return hit / (all * 1.0)
+        metric = hit / (all * 1.0)
+
+        endtime = datetime.datetime.now()
+        interval=(endtime - starttime).seconds
+        print 'precision: time consumption: %d' % (interval)
+        return metric
+
+class InnerThreadClass(multiprocessing.Process):
+    def __init__(self, train, target_user_id_list, K, resultQueue):
+        multiprocessing.Process.__init__(self)
+
+        self.target_user_id_list = target_user_id_list
+        self.whole_user_id_list = train.keys()
+        self.train = train
+        #self.W = {}
+        self.K = K
+        self.resultQueue = resultQueue
+
+        self.total = len(target_user_id_list)
+ 
+    def run(self):
+        map(lambda (step, u): self.inner(step, u), enumerate(self.target_user_id_list)) 
+
+        print 'done'
+
+    def inner(self, step, u):
+        user_u_history = set(self.train[u].keys())
+        simi_list_of_user_u = []
+        for v in self.whole_user_id_list:
+            if u == v:
+                continue
+
+            user_v_history = set(self.train[v].keys())
+            #user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, self.distinct_item_list))
+            #user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, self.distinct_item_list))
+            #common_items = user_u_history.intersection(user_v_history)
+            common_items = user_u_history.union(user_v_history)
+
+            if 0 == len(common_items):
+                simi = 0
+            else:
+                #print_matrix(train[u])
+
+                user_u_repr = np.array(map(lambda x: 1 if x in self.train[u] else 0, common_items))
+                user_v_repr = np.array(map(lambda x: 1 if x in self.train[v] else 0, common_items))
+
+                #print 'user_u_repr:', user_u_repr
+                #print 'user_v_repr:', user_v_repr
+                simi = user_u_repr.dot(user_v_repr) / (la.norm(user_u_repr * la.norm(user_v_repr)))
+                #raw_input()
+
+                #
+            simi_list_of_user_u.append((v, simi))
+
+            #
+        K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
+        #K_neighbors = sorted(simi_list_of_user_u, key=lambda x: x[1], reverse=True)[0:self.K]
+        #print 'K_neighbors:', K_neighbors
+        #raw_input()
+
+
+
+        #self.W[u] = dict(K_neighbors)
+        self.resultQueue.put((u, dict(K_neighbors)))
+        
+
+
+        if (0 == step % 64):
+            print 'progress: %d/%d' % (step, self.total)
 
 
 class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
@@ -136,8 +217,8 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
     def user_similarity(self, train):
         #build inverse table item_users
         print 'This is RecommendatorSystemViaCollaborativeFiltering'
+        starttime = datetime.datetime.now()
         
-
         ###
         #
         #user set
@@ -150,49 +231,60 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
 
         #
         #calculate final similarity matrix W
+
+        W_sub = {}
+
+
+        
+
+        #map(lambda (step, u): inner(step, u), enumerate(user_id_set)) 
+
+        ## Make the Pool of workers
+        #pool = ThreadPool(4) 
+        ## Open the urls in their own threads
+        ## and return the results
+        #results = pool.map(lambda (step, u): inner(step, u), enumerate(user_id_set))
+        ##close the pool and wait for the work to finish 
+        #pool.close() 
+        #pool.join()
+
+
+        threads = []
+        num = 4
+        piece_len = len(user_id_set) / num
+
+        pieces = []
+        user_id_list = list(user_id_set)
+        pieces = [user_id_list[x * piece_len: (x + 1) * piece_len] for x in xrange(0, num + 1)]
+
+
+        results = multiprocessing.Queue()
+        # 创建线程对象
+        for x in pieces:
+            threads.append(InnerThreadClass(train, x, self.K, results))
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()  
+
+
+        total = len(user_id_list)
+        print 'progress: %d/%d. done.' % (total, total)
+
+        #
+        W_pieces = []
+        while not results.empty():
+            W_pieces.append(results.get())
+
         W = {}
-        total = len(user_id_set)
-        for step, u in enumerate(user_id_set):
-            user_u_history = set(train[u].keys())
-            simi_list_of_user_u = []
-            for v in user_id_set:
-                if u == v:
-                    continue
-
-                user_v_history = set(train[v].keys())
-                #user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, self.distinct_item_list))
-                #user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, self.distinct_item_list))
-                #common_items = user_u_history.intersection(user_v_history)
-                common_items = user_u_history.union(user_v_history)
-
-                if 0 == len(common_items):
-                    simi = 0
-                else:
-                    #print_matrix(train[u])
-
-                    user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, common_items))
-                    user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, common_items))
-
-                    #print 'user_u_repr:', user_u_repr
-                    #print 'user_v_repr:', user_v_repr
-                    simi = user_u_repr.dot(user_v_repr) / (la.norm(user_u_repr * la.norm(user_v_repr)))
-                    #raw_input()
-
-                    #
-                simi_list_of_user_u.append((v, simi))
-
-                #
-            K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
-            #print 'K_neighbors:', K_neighbors
-            #raw_input()
-            W[u] = dict(K_neighbors)
-            #print 'W[u]', W[u]
-            #raw_input()
-
-            if (0 == step % 64):
-                print 'progress: %d/%d' % (step, total)
-        print 'progress: %d/%d. done.' % (step, total)
+        
+        map(lambda x: W.update(x), W_pieces)
         self.W = W
+
+        #
+        endtime = datetime.datetime.now()
+        interval=(endtime - starttime).seconds
+        print 'user_similarity: time consumption: %d' % (interval)
         
 
     def recommend(self, u, train, N, K=10):
