@@ -187,8 +187,6 @@ class InnerThreadClass(multiprocessing.Process):
         #print 'K_neighbors:', K_neighbors
         #raw_input()
 
-
-
         self.W[u] = dict(K_neighbors)
         
 
@@ -231,31 +229,15 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
 
         #
         #calculate final similarity matrix W
-
-        W_sub = {}
-
-
-        
-
-        #map(lambda (step, u): inner(step, u), enumerate(user_id_set)) 
-
-        ## Make the Pool of workers
-        #pool = ThreadPool(4) 
-        ## Open the urls in their own threads
-        ## and return the results
-        #results = pool.map(lambda (step, u): inner(step, u), enumerate(user_id_set))
-        ##close the pool and wait for the work to finish 
-        #pool.close() 
-        #pool.join()
-
-
         threads = []
-        num = 4
-        piece_len = len(user_id_set) / num
+        # Start consumers
+        num_threads = multiprocessing.cpu_count() * 2
+        print 'Creating %d threads' % num_threads
+        piece_len = len(user_id_set) / num_threads
 
         pieces = []
         user_id_list = list(user_id_set)
-        pieces = [user_id_list[x * piece_len: (x + 1) * piece_len] for x in xrange(0, num + 1)]
+        pieces = [user_id_list[x * piece_len: (x + 1) * piece_len] for x in xrange(0, num_threads + 1)]
 
 
         # 创建线程对象
@@ -268,7 +250,6 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
             t.start()
         for t in threads:
             t.join()  
-
 
         total = len(user_id_list)
         print 'progress: %d/%d. done.' % (total, total)
