@@ -308,7 +308,7 @@ class RecommendatorSystemViaCollaborativeFiltering_UsingRedis(RecommendatorSyste
 
         #calculate co-rated items between users
         C = {}
-        #C_prefix = 'C_'
+        C_prefix = 'C_'
 
         N = {}
         for i, users in item_users.items():
@@ -321,11 +321,12 @@ class RecommendatorSystemViaCollaborativeFiltering_UsingRedis(RecommendatorSyste
                     if u == v:
                         continue
 
-                    if u not in C:
-                        C[u] = {}
-                    if v not in C[u]:
-                        C[u][v] = 0
-                    C[u][v] += 1
+                    #if u not in C:
+                    #    C[u] = {}
+                    #if v not in C[u]:
+                    #    C[u][v] = 0
+                    #C[u][v] += 1
+                    self.my_redis.hincrby(C_prefix + u, C_prefix + v, 1)
         print 'C matrix calculated.'
 
 
@@ -334,7 +335,8 @@ class RecommendatorSystemViaCollaborativeFiltering_UsingRedis(RecommendatorSyste
         W_key = 'W'
         for u, related_users in C.items():
             for v, cuv in related_users.items():
-                self.my_redis.hset(u, v, C[u][v] / math.sqrt(N[u] * N[v]))
+                #self.my_redis.hset(u, v, C[u][v] / math.sqrt(N[u] * N[v]))
+                self.my_redis.hset(u, v, self.my_redis.hget(C_prefix + u, C_prefix + v) / math.sqrt(N[u] * N[v]))
                 
 
     def recommend(self, u, train, N, K=10):
