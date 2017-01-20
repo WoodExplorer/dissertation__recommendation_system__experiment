@@ -63,3 +63,5 @@ ml-latest-small/ratings.csv_main_word2vec_modelnum_features=100_min_count=1_wind
 tmp_modelnum_features=3_min_count=0_window=20.model
 *.model
 *.model
+*.model
+tmp_modelnum_features=3_min_count=0_window=20.model
