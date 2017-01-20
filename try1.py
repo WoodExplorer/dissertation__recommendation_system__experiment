@@ -85,9 +85,9 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, del
         for userId in test:
             test[userId].sort(key=lambda x: x[2])
 
-    print train[train.keys()[0]]
-    print test[test.keys()[0]]
-    raw_input()
+    #print train[train.keys()[0]]
+    #print test[test.keys()[0]]
+    #raw_input()
     # sort by time: PART 1 <end>
 
     ### split test data further
@@ -113,14 +113,14 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, del
             #raw_input()
             #print (len(test[k_user]) * (1.0 / num_of_parts_of_test_data))
             #print (int)(len(test[k_user]) * (1.0 / num_of_parts_of_test_data))
-            split_point_index = -1 * ((int)(len(test[k_user]) * (1.0 / num_of_parts_of_test_data)))
+            split_point_index = -1 * ((int)(len(test[k_user]) * (1.0 / (num_of_parts_of_test_data + 1))))
             #print 'split_point_index:', split_point_index
             test_real[k_user] = [test[k_user][:split_point_index], test[k_user][split_point_index:]]
             #raw_input()
 
         # sort by time: PART 2 <end>
 
-    print test_real[test_real.keys()[0]]
+    #print test_real[test_real.keys()[0]]
     print 'sort_by_time:', sort_by_time
 
     #raw_input('pause')
@@ -753,7 +753,8 @@ def main_windows():
     print mode_dict
     mode = int(raw_input('Please select mode:'))
     if 1 == mode:
-        data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+        #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+        data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
         seed = 2 
         train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
@@ -771,9 +772,10 @@ def main_windows():
             metrics = rs.calculate_metrics(train, test, N)
             print 'metrics:', metrics
     elif 2 == mode:
-        data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+        #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
         #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
         #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+        data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
         K = 10
         seed = 2 
@@ -792,9 +794,10 @@ def main_windows():
         metrics = rs.calculate_metrics(train, test, N)
         print 'metrics:', metrics
     elif 3 == mode:
-        data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+        #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
         #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
         #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+        data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
         K = 10
         seed = 2 
@@ -814,13 +817,14 @@ def main_windows():
         metrics = rs.calculate_metrics(train, test, N)
         print 'metrics:', metrics
     elif 4 == mode:
-        data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+        #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
         #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
         #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+        data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
         K = 10
         seed = 2 
-        test_set_ratio = 0.2
+        #test_set_ratio = 0.2
         train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter, sort_by_time=True)
 
         rs = RecommendatorViaDoc2Vec()

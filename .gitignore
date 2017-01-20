@@ -57,6 +57,7 @@ main_modelnum_features=500_min_count=1_window=20
 *.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20
 ml-latest-small/ratings.csv_main_doc2vec_modelnum_features=300_min_count=3_window=20
 ml-latest-small/ratings.csv_main_word2vec_modelnum_features=100_min_count=1_window=5
+ml-100k/
 *.pyc
 *.dump
 *.model
