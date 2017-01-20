@@ -385,81 +385,81 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         return rank[:N]
 
 
-class RecommendatorSystemViaCollaborativeFiltering_UsingRedis(RecommendatorSystemViaCollaborativeFiltering):
-    """docstring for RecommendatorSystemViaCollaborativeFiltering_UsingRedis"""
-    def __init__(self):
-        super(RecommendatorSystemViaCollaborativeFiltering_UsingRedis, self).__init__()
-        
-        #
-        self.my_redis = redis.Redis(host='localhost', port=6379, db=0) 
-
-    def setup(self, para):
-        self.train = para['train']
-        self.user_similarity(para['train'])
-
-    def user_similarity(self, train):
-        #build inverse table item_users
-        item_users = {}
-        for u, items in train.items():
-            for i in items.keys():
-                if i not in item_users:
-                    item_users[i] = set()
-                item_users[i].add(u)
-
-        #calculate co-rated items between users
-        C = {}
-        C_prefix = 'C_'
-
-        N = {}
-        for i, users in item_users.items():
-            for u in users:
-                if u not in N:
-                    N[u] = 0
-                N[u] += 1
-
-                for v in users:
-                    if u == v:
-                        continue
-
-                    #if u not in C:
-                    #    C[u] = {}
-                    #if v not in C[u]:
-                    #    C[u][v] = 0
-                    #C[u][v] += 1
-                    self.my_redis.hincrby(C_prefix + u, C_prefix + v, 1)
-        print 'C matrix calculated.'
-
-
-        #calculate final similarity matrix W
-        #W = {}
-        W_key = 'W'
-        for u, related_users in C.items():
-            for v, cuv in related_users.items():
-                #self.my_redis.hset(u, v, C[u][v] / math.sqrt(N[u] * N[v]))
-                self.my_redis.hset(u, v, self.my_redis.hget(C_prefix + u, C_prefix + v) / math.sqrt(N[u] * N[v]))
-                
-
-    def recommend(self, target_user_history, N, K=10):
-        '''@N: number of user neighbors considered
-        '''
-        rank = {}
-        interacted_items = target_user_history
-
-        W_u = self.my_redis.hgetall(u)
-        
-        for v, wuv in sorted(map(lambda (x, y): (x, float(y)), W_u.items()), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
-            for i, rvi in self.train[v].items(): # rvi: rate of item by user v
-                if i in interacted_items:
-                    #do not recommend items which user u interacted before
-                    continue
-
-                if i not in rank:
-                    rank[i] = 0.0
-                rank[i] += wuv * rvi
-
-        rank = rank.items()
-        rank.sort(key=lambda x: x[1], reverse=True)
-        return rank[:N]
+#class RecommendatorSystemViaCollaborativeFiltering_UsingRedis(RecommendatorSystemViaCollaborativeFiltering):
+#    """docstring for RecommendatorSystemViaCollaborativeFiltering_UsingRedis"""
+#    def __init__(self):
+#        super(RecommendatorSystemViaCollaborativeFiltering_UsingRedis, self).__init__()
+#        
+#        #
+#        self.my_redis = redis.Redis(host='localhost', port=6379, db=0) 
+#
+#    def setup(self, para):
+#        self.train = para['train']
+#        self.user_similarity(para['train'])
+#
+#    def user_similarity(self, train):
+#        #build inverse table item_users
+#        item_users = {}
+#        for u, items in train.items():
+#            for i in items.keys():
+#                if i not in item_users:
+#                    item_users[i] = set()
+#                item_users[i].add(u)
+#
+#        #calculate co-rated items between users
+#        C = {}
+#        C_prefix = 'C_'
+#
+#        N = {}
+#        for i, users in item_users.items():
+#            for u in users:
+#                if u not in N:
+#                    N[u] = 0
+#                N[u] += 1
+#
+#                for v in users:
+#                    if u == v:
+#                        continue
+#
+#                    #if u not in C:
+#                    #    C[u] = {}
+#                    #if v not in C[u]:
+#                    #    C[u][v] = 0
+#                    #C[u][v] += 1
+#                    self.my_redis.hincrby(C_prefix + u, C_prefix + v, 1)
+#        print 'C matrix calculated.'
+#
+#
+#        #calculate final similarity matrix W
+#        #W = {}
+#        W_key = 'W'
+#        for u, related_users in C.items():
+#            for v, cuv in related_users.items():
+#                #self.my_redis.hset(u, v, C[u][v] / math.sqrt(N[u] * N[v]))
+#                self.my_redis.hset(u, v, self.my_redis.hget(C_prefix + u, C_prefix + v) / math.sqrt(N[u] * N[v]))
+#                
+#
+#    def recommend(self, target_user_history, N, K=10):
+#        '''@N: number of user neighbors considered
+#        '''
+#        rank = {}
+#        interacted_items = target_user_history
+#
+#        W_u = self.my_redis.hgetall(u)
+#        
+#        for v, wuv in sorted(map(lambda (x, y): (x, float(y)), W_u.items()), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
+#            for i, rvi in self.train[v].items(): # rvi: rate of item by user v
+#                if i in interacted_items:
+#                    #do not recommend items which user u interacted before
+#                    continue
+#
+#                if i not in rank:
+#                    rank[i] = 0.0
+#                rank[i] += wuv * rvi
+#
+#        rank = rank.items()
+#        rank.sort(key=lambda x: x[1], reverse=True)
+#        return rank[:N]
 
 
 class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
@@ -536,7 +536,10 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         self.W = W
         
 
-
+def user_history2user_repr(model, target_user_history): # target_user_history: It should_be_a_list_of_items_not_tuples_included_items.
+    #print 'target_user_history:', target_user_history
+    return np.average(map(lambda item: model[item], filter(lambda x: x in model, target_user_history)), axis=0)
+        
 class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
     """docstring for RecommendatorViaDoc2Vec"""
     def __init__(self):
@@ -560,7 +563,8 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
         list_of_list = convert_level_1_dict_level_2_list_of_size_3_tuples_to_list_of_LabeledSentence(data)
         #print 'list_of_list:', list_of_list
 
-        tricky__load_model = False # tricky flag used to skip calculation of model from scratch and load model from file
+        # tricky flag used to skip calculation of model from scratch and load model from file
+        tricky__load_model = True
         if not tricky__load_model:
             print 'start training'
             self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
@@ -574,8 +578,9 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
             # save the model for later use. You can load it later using Word2Vec.load()
             self.model.save(model_name)
         else:
-            self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20')
+            #self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20')
             #self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=300_min_count=3_window=20')
+            self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20.model')
             
 
         #
@@ -588,38 +593,82 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
         #print 'user_history:', user_history
 
         #user repre dict
-        user_repre = {uesr_id: np.average(map(lambda item: self.model[item], filter(lambda x: x in self.model, user_history[uesr_id])), axis=0) for uesr_id in user_history}
+        self.user_repre = {uesr_id: user_history2user_repr(self.model, user_history[uesr_id]) for uesr_id in user_history}
         #print 'user_repre:', user_repre
 
         #
         #calculate final similarity matrix W
         
 
-        W = {}
-        total = len(user_id_set)
-        for step, u in enumerate(user_id_set):
-            simi_list_of_user_u = []
-            for v in user_id_set:
-                if u == v:
-                    continue
+#        W = {}
+#        total = len(user_id_set)
+#        for step, u in enumerate(user_id_set):
+#            simi_list_of_user_u = []
+#            for v in user_id_set:
+#                if u == v:
+#                    continue
+#
+#                simi = user_repre[u].dot(user_repre[v]) / (la.norm(user_repre[u] * la.norm(user_repre[v])))
+#                
+#                simi_list_of_user_u.append((v, simi))
+#
+#                #
+#            K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
+#            #print 'K_neighbors:', K_neighbors
+#            #raw_input()
+#            W[u] = dict(K_neighbors)
+#            #print 'W[u]', W[u]
+#            #raw_input()
+#
+#            if (0 == step % 64):
+#                print 'progress: %d/%d' % (step, total)
+#        print 'progress: %d/%d. done.' % (step, total)
+#        self.W = W
 
-                simi = user_repre[u].dot(user_repre[v]) / (la.norm(user_repre[u] * la.norm(user_repre[v])))
-                
-                simi_list_of_user_u.append((v, simi))
+
+
+    def recommend(self, target_user_history, N, K=10):
+        '''@N: number of user neighbors considered
+        '''
+        rank = {}
+        interacted_items = [x[0] for x in target_user_history]
+        #print 'target_user_history:', target_user_history
+        #print 'interacted_items:', interacted_items
+
+        ### find K neighbors <begin>
+        simi_list_of_user_u = []
+        #print 'target_user_history:', target_user_history
+        user_repre_of_u = user_history2user_repr(self.model, interacted_items)
+
+        for v in self.train.keys():
+            #if u == v:
+            #    assert(False)
+            #    continue
+
+            user_v_history = self.user_repre[v]
+            simi = user_repre_of_u.dot(self.user_repre[v]) / (la.norm(user_repre_of_u * la.norm(self.user_repre[v])))
 
                 #
-            K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
-            #print 'K_neighbors:', K_neighbors
-            #raw_input()
-            W[u] = dict(K_neighbors)
-            #print 'W[u]', W[u]
-            #raw_input()
+            simi_list_of_user_u.append((v, simi))
 
-            if (0 == step % 64):
-                print 'progress: %d/%d' % (step, total)
-        print 'progress: %d/%d. done.' % (step, total)
-        self.W = W
-        
+            #
+        K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
+        ### find K neighbors <end>
+
+        for v, wuv in K_neighbors:
+        #for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
+            for i, rvi, timestamp in self.train[v]: # rvi: rate of item by user v
+                if i in interacted_items:
+                    #do not recommend items which user u interacted before
+                    continue
+
+                if i not in rank:
+                    rank[i] = 0.0
+                rank[i] += wuv * rvi
+
+        rank = rank.items()
+        rank.sort(key=lambda x: x[1], reverse=True)
+        return rank[:N]
 
 def print_matrix(M):
     def print_wrapper(x):
@@ -693,7 +742,7 @@ def main_windows():
 
         K = 10
         seed = 2 
-        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
 
         rs = RecommendatorViaWord2Vec()
         rs.setup({'data': train, 
@@ -714,7 +763,7 @@ def main_windows():
 
         K = 10
         seed = 2 
-        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
 
         rs = RecommendatorViaDoc2Vec()
         rs.setup({'data': train, 
@@ -737,7 +786,7 @@ def main_windows():
         K = 10
         seed = 2 
         test_set_ratio = 0.2
-        train, test = extract_data_from_file_and_generate_train_and_test__with_time_consideration(data_filename, 2, 0, seed, delimiter, test_set_ratio)
+        train, test = extract_data_from_file_and_generate_train_and_test__with_time_consideration(data_filename, 4, 0, seed, delimiter, test_set_ratio)
 
         rs = RecommendatorViaDoc2Vec()
         rs.setup({'data': train, 
@@ -761,7 +810,7 @@ def main_Linux():
     data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
 
     seed = 2 
-    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
 
 #    #rs = RecommendatorSystemViaCollaborativeFiltering()
 #    rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
