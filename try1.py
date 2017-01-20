@@ -327,14 +327,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         print 'user_similarity: time consumption: %d' % (interval)
         
 
-    def recommend(self, target_user_history, N, K=10):
-        '''@N: number of user neighbors considered
-        '''
-        rank = {}
-        interacted_items = [x[0] for x in target_user_history]
-        #print 'target_user_history:', target_user_history
-        #print 'interacted_items:', interacted_items
-
+    def find_K_neighbors(self, interacted_items, K):
         ### find K neighbors <begin>
         simi_list_of_user_u = []
         for v in self.train.keys():
@@ -368,6 +361,17 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
             #
         K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
         ### find K neighbors <end>
+        return K_neighbors
+
+    def recommend(self, target_user_history, N, K=10):
+        '''@N: number of user neighbors considered
+        '''
+        rank = {}
+        interacted_items = [x[0] for x in target_user_history]
+        #print 'target_user_history:', target_user_history
+        #print 'interacted_items:', interacted_items
+
+        K_neighbors = self.find_K_neighbors(interacted_items, K)
 
         for v, wuv in K_neighbors:
         #for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
@@ -383,6 +387,8 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         rank = rank.items()
         rank.sort(key=lambda x: x[1], reverse=True)
         return rank[:N]
+
+    
 
 
 #class RecommendatorSystemViaCollaborativeFiltering_UsingRedis(RecommendatorSystemViaCollaborativeFiltering):
@@ -625,19 +631,10 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
 #        print 'progress: %d/%d. done.' % (step, total)
 #        self.W = W
 
-
-
-    def recommend(self, target_user_history, N, K=10):
-        '''@N: number of user neighbors considered
-        '''
-        rank = {}
-        interacted_items = [x[0] for x in target_user_history]
-        #print 'target_user_history:', target_user_history
-        #print 'interacted_items:', interacted_items
-
+    def find_K_neighbors(self, interacted_items, K):
         ### find K neighbors <begin>
         simi_list_of_user_u = []
-        #print 'target_user_history:', target_user_history
+        #print 'interacted_items:', interacted_items
         user_repre_of_u = user_history2user_repr(self.model, interacted_items)
 
         for v in self.train.keys():
@@ -654,21 +651,8 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
             #
         K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
         ### find K neighbors <end>
+        return K_neighbors
 
-        for v, wuv in K_neighbors:
-        #for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
-            for i, rvi, timestamp in self.train[v]: # rvi: rate of item by user v
-                if i in interacted_items:
-                    #do not recommend items which user u interacted before
-                    continue
-
-                if i not in rank:
-                    rank[i] = 0.0
-                rank[i] += wuv * rvi
-
-        rank = rank.items()
-        rank.sort(key=lambda x: x[1], reverse=True)
-        return rank[:N]
 
 def print_matrix(M):
     def print_wrapper(x):
