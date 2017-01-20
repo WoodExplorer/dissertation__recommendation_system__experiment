@@ -154,6 +154,45 @@ class RecommendatorSystem(object):
     def calculate_metrics(self, train, test, N):
         starttime = datetime.datetime.now()
 
+        ###
+        threads = []
+        # Start consumers
+        num_threads = multiprocessing.cpu_count() * 2
+        #num_threads = 1 # for debugging        
+        if len(test) < num_threads:
+            num_threads = 1
+        
+        print 'Creating %d threads' % num_threads
+
+        piece_len = len(test) / num_threads
+
+        test__in_list = test.items()
+        #print 'dict(test__in_list):', dict(test__in_list)
+        pieces = [dict(test__in_list[x * piece_len: (x + 1) * piece_len]) for x in xrange(0, num_threads + 1)]
+        #print 'pieces:', pieces
+        # 创建线程对象
+        name_prefix = 'thread-'
+        name_postfix = '.dump'
+        for en, x in enumerate(pieces):
+            name = name_prefix + str(en) + name_postfix
+            threads.append(InnerThreadClass(name, self, len(test), x, N))
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()  
+
+        total = len(test)
+        print 'progress: %d/%d. done.' % (total, total)
+
+        #
+        rec_pieces = [cPickle.load(open(name, 'r')) for name in [name_prefix + str(en) + name_postfix for en in xrange(num_threads + 1)]]
+        #print 'rec_pieces:', rec_pieces
+        rec = {}
+        map(lambda x: rec.update(x), rec_pieces)
+        
+        #print 'rec:', rec
+        ###
+
         hit = 0
         all__for_recall = 0
         all__for_precision = 0
@@ -161,7 +200,7 @@ class RecommendatorSystem(object):
             history = test[user][0]
             answer = test[user][1]
             tu = [x[0] for x in answer]
-            rank = self.recommend(history, N)
+            rank = rec[user] # self.recommend(history, N)
             #print 'rank:', rank
             for item, pui in rank:
                 if item in tu:
@@ -198,64 +237,32 @@ class RecommendatorSystem(object):
 #        return metric
 
 class InnerThreadClass(multiprocessing.Process):
-    def __init__(self, name, train, target_user_id_list, K):
+    def __init__(self, name, recommendator, total, partial_test_set, N):
         multiprocessing.Process.__init__(self)
 
-        self.target_user_id_list = target_user_id_list
-        self.whole_user_id_list = train.keys()
-        self.train = train
-        self.W = {}
-        self.K = K
         self.name = name
-
-        self.total = len(target_user_id_list)
+        self.recommendator = recommendator
+        self.total = total
+        self.partial_test_set = partial_test_set
+        self.N = N
  
     def run(self):
-        map(lambda (step, u): self.inner(step, u), enumerate(self.target_user_id_list)) 
-        cPickle.dump(self.W, open(self.name, 'w'))
+        rec = {}
+        #print 'self.partial_test_set:', self.partial_test_set
+        for step, user_id in enumerate(self.partial_test_set):
+            piece_of_test_data = self.partial_test_set[user_id]
+            history = piece_of_test_data[0]
+            #print 'history:', history
+            recommendation = self.recommendator.recommend(history, self.N)
+            #print 'recommendation: %s' % (str(recommendation))
+            rec[user_id] = recommendation
+
+            if (0 == step % 64):
+                print 'progress: %d/%d' % (step, self.total)
+
+        #print '[%s]: rec: %s' % (self.name, str(rec))
+        cPickle.dump(rec, open(self.name, 'w'))
         print 'done'
-
-    def inner(self, step, u):
-        user_u_history = set(self.train[u].keys())
-        simi_list_of_user_u = []
-        for v in self.whole_user_id_list:
-            if u == v:
-                continue
-
-            user_v_history = set(self.train[v].keys())
-            #user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, self.distinct_item_list))
-            #user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, self.distinct_item_list))
-            #common_items = user_u_history.intersection(user_v_history)
-            common_items = user_u_history.union(user_v_history)
-
-            if 0 == len(common_items):
-                simi = 0
-            else:
-                #print_matrix(train[u])
-
-                user_u_repr = np.array(map(lambda x: 1 if x in self.train[u] else 0, common_items))
-                user_v_repr = np.array(map(lambda x: 1 if x in self.train[v] else 0, common_items))
-
-                #print 'user_u_repr:', user_u_repr
-                #print 'user_v_repr:', user_v_repr
-                simi = user_u_repr.dot(user_v_repr) / (la.norm(user_u_repr * la.norm(user_v_repr)))
-                #raw_input()
-
-                #
-            simi_list_of_user_u.append((v, simi))
-
-            #
-        K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
-        #K_neighbors = sorted(simi_list_of_user_u, key=lambda x: x[1], reverse=True)[0:self.K]
-        #print 'K_neighbors:', K_neighbors
-        #raw_input()
-
-        self.W[u] = dict(K_neighbors)
-        
-
-
-        if (0 == step % 64):
-            print 'progress: %d/%d' % (step, self.total)
 
 
 class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
@@ -570,7 +577,7 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
         #print 'list_of_list:', list_of_list
 
         # tricky flag used to skip calculation of model from scratch and load model from file
-        tricky__load_model = True
+        tricky__load_model = False
         if not tricky__load_model:
             print 'start training'
             self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
