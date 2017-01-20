@@ -151,11 +151,12 @@ class RecommendatorSystem(object):
         return train, test
 
 
-    def recall(self, train, test, N):
+    def calculate_metrics(self, train, test, N):
         starttime = datetime.datetime.now()
 
         hit = 0
-        all = 0
+        all__for_recall = 0
+        all__for_precision = 0
         for user in test.keys():
             history = test[user][0]
             answer = test[user][1]
@@ -165,34 +166,36 @@ class RecommendatorSystem(object):
             for item, pui in rank:
                 if item in tu:
                     hit += 1
-            all += len(tu)
-        metric = hit / (all * 1.0)
+            all__for_recall += len(tu)
+            all__for_precision += len(rank) #Note: In book RSP, the author used 'all += N'
+        metric_recall = hit / (all__for_recall * 1.0)
+        metric_precision = hit / (all__for_precision * 1.0)
 
         endtime = datetime.datetime.now()
         interval = (endtime - starttime).seconds
-        print 'recall: time consumption: %d' % (interval)
-        return metric
+        print 'metric calculation: time consumption: %d' % (interval)
+        return {'recall': metric_recall, 'precision': metric_precision}
 
-    def precision(self, train, test, N):
-        starttime = datetime.datetime.now()
-
-        hit = 0
-        all = 0
-        for user in test.keys():
-            history = test[user][0]
-            answer = test[user][1]
-            tu = [x[0] for x in answer]
-            rank = self.recommend(history, N)
-            for item, pui in rank:
-                if item in tu:
-                    hit += 1
-            all += len(rank) #Note: In book RSP, the author used 'all += N'
-        metric = hit / (all * 1.0)
-
-        endtime = datetime.datetime.now()
-        interval=(endtime - starttime).seconds
-        print 'precision: time consumption: %d' % (interval)
-        return metric
+#    def precision(self, train, test, N):
+#        starttime = datetime.datetime.now()
+#
+#        hit = 0
+#        all = 0
+#        for user in test.keys():
+#            history = test[user][0]
+#            answer = test[user][1]
+#            tu = [x[0] for x in answer]
+#            rank = self.recommend(history, N)
+#            for item, pui in rank:
+#                if item in tu:
+#                    hit += 1
+#            all += len(rank) #Note: In book RSP, the author used 'all += N'
+#        metric = hit / (all * 1.0)
+#
+#        endtime = datetime.datetime.now()
+#        interval=(endtime - starttime).seconds
+#        print 'precision: time consumption: %d' % (interval)
+#        return metric
 
 class InnerThreadClass(multiprocessing.Process):
     def __init__(self, name, train, target_user_id_list, K):
@@ -681,10 +684,8 @@ def main_windows():
 
             rs.setup({'train': train, 'K': K})
 
-            recall = rs.recall(train, test, N)
-            print 'recall:', recall
-            precision = rs.precision(train, test, N)
-            print 'precision:', precision
+            metrics = rs.calculate_metrics(train, test, N)
+            print 'metrics:', metrics
     elif 2 == mode:
         data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
         #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
@@ -704,10 +705,8 @@ def main_windows():
         })
 
         N = 10
-        recall = rs.recall(train, test, N)
-        print 'recall:', recall
-        precision = rs.precision(train, test, N)
-        print 'precision:', precision
+        metrics = rs.calculate_metrics(train, test, N)
+        print 'metrics:', metrics
     elif 3 == mode:
         data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
         #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
@@ -727,10 +726,9 @@ def main_windows():
         })
 
         N = 10
-        recall = rs.recall(train, test, N)
-        print 'recall:', recall
-        precision = rs.precision(train, test, N)
-        print 'precision:', precision
+        
+        metrics = rs.calculate_metrics(train, test, N)
+        print 'metrics:', metrics
     elif 4 == mode:
         data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
         #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
@@ -751,10 +749,9 @@ def main_windows():
         })
 
         N = 10
-        recall = rs.recall(train, test, N)
-        print 'recall:', recall
-        precision = rs.precision(train, test, N)
-        print 'precision:', precision
+        
+        metrics = rs.calculate_metrics(train, test, N)
+        print 'metrics:', metrics
 
 
 
@@ -808,10 +805,9 @@ def main_Linux():
         'K': K,
     })
 
-    recall = rs.recall(train, test, N)
-    print 'recall:', recall
-    precision = rs.precision(train, test, N)
-    print 'precision:', precision
+    
+    metrics = rs.calculate_metrics(train, test, N)
+    print 'metrics:', metrics
 
 def main():
     if isWindowsSystem():
@@ -904,10 +900,9 @@ def test():
         #print_matrix(rs.W)
     
         N = 10
-        recall = rs.recall(train, test, N)
-        print 'recall:', recall
-        precision = rs.precision(train, test, N)
-        print 'precision:', precision
+        
+        metrics = rs.calculate_metrics(train, test, N)
+        print 'metrics:', metrics
     elif 4 == mode:
 
         #list_of_list = convert_2_level_dict_to_list_of_list(train)
@@ -926,10 +921,9 @@ def test():
             'window': 20,
             'K': K, })
 
-        recall = rs.recall(train, test, N)
-        print 'recall:', recall
-        precision = rs.precision(train, test, N)
-        print 'precision:', precision
+        
+        metrics = rs.calculate_metrics(train, test, N)
+        print 'metrics:', metrics
 
 
 if __name__ == '__main__':
