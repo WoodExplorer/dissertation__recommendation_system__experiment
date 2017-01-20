@@ -48,9 +48,10 @@ def get_least_numbers_big_data(self, alist, k):
 
     return map(lambda x:-x, max_heap)
 
-def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, delimiter):
-    test = {}
-    train = {}
+def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, delimiter, num_of_parts_of_test_data=4):
+    test = None
+    train = None
+    data = {}
     random.seed(seed)
 
     with open(filename , 'r') as f:
@@ -60,17 +61,37 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, del
             #userId = int(userId)
             #movieId = int(movieId)
             rating = float(rating)
+            timestamp = int(timestamp)
 
-            if k == random.randint(0, M):
-                if userId not in test:
-                    test[userId] = {}
-                test[userId][movieId] = rating
+            if userId not in data:
+                data[userId] = []
+            data[userId].append((movieId, rating, timestamp))
+
+    test = {}
+    train = {}
+    for userId in data:
+        total_len = len(data[userId])
+        if k == random.randint(0, M):
+            test[userId] = data[userId]
+        else:
+            train[userId] = data[userId]
+    userId = None
+
+    ### split test data further
+    test_real = {}
+    for k_user in test:
+        test_real[k_user] = [[], []]
+        for m, r, t in test[k_user]:
+            # every record of test dataset is supposed to be splitted into 2 parts: input part and fact/answer part
+            # How to specify the relative of these parts? 
+            #  Assign num_of_parts_of_test_data an appropriate value: each record of test dataset is supposed
+            # to constitute num_of_parts_of_test_data parts, and one of them would serve as the fact/answer part.
+            if 0 == random.randint(0, num_of_parts_of_test_data):
+                test_real[k_user][1].append((m, r, t)) # the fact/answer part in one record of test dataset
             else:
-                if userId not in train:
-                    train[userId] = {}
-                train[userId][movieId] = rating
+                test_real[k_user][0].append((m, r, t)) # the input part in one record of test dataset
 
-    return train, test
+    return train, test_real
 
 
 
@@ -308,8 +329,8 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         '''
         rank = {}
         interacted_items = [x[0] for x in target_user_history]
-        print 'target_user_history:', target_user_history
-        print 'interacted_items:', interacted_items
+        #print 'target_user_history:', target_user_history
+        #print 'interacted_items:', interacted_items
 
         ### find K neighbors <begin>
         simi_list_of_user_u = []
@@ -319,7 +340,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
             #    continue
 
             user_v_history = set([x[0] for x in self.train[v]])
-            print 'user_v_history:', user_v_history
+            #print 'user_v_history:', user_v_history
             #user_u_repr = np.array(map(lambda x: 1 if x in train[u] else 0, self.distinct_item_list))
             #user_v_repr = np.array(map(lambda x: 1 if x in train[v] else 0, self.distinct_item_list))
             #common_items = user_u_history.intersection(user_v_history)
@@ -648,7 +669,7 @@ def main_windows():
         data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
 
         seed = 2 
-        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
 
         rs = RecommendatorSystemViaCollaborativeFiltering()
         K = 10
@@ -912,5 +933,5 @@ def test():
 
 
 if __name__ == '__main__':
-    #main()
-    test()
+    main()
+    #test()
