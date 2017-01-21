@@ -77,13 +77,13 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, del
             train[userId] = data[userId]
     userId = None
 
+    for userId in test:
+        test[userId].sort(key=lambda x: x[2])
     # sort by time: PART 1<begin>
     if sort_by_time:
         print 'sort by time PART 1'
         for userId in train:
             train[userId].sort(key=lambda x: x[2])
-        for userId in test:
-            test[userId].sort(key=lambda x: x[2])
 
     #print train[train.keys()[0]]
     #print test[test.keys()[0]]
@@ -92,31 +92,31 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, del
 
     ### split test data further
     test_real = {}
-    if not sort_by_time:
-        for k_user in test:
-            test_real[k_user] = [[], []]
-            for m, r, t in test[k_user]:
-                # every record of test dataset is supposed to be splitted into 2 parts: input part and fact/answer part
-                # How to specify the relative of these parts? 
-                #  Assign num_of_parts_of_test_data an appropriate value: each record of test dataset is supposed
-                # to constitute num_of_parts_of_test_data parts, and one of them would serve as the fact/answer part.
-                if 0 == random.randint(0, num_of_parts_of_test_data):
-                    test_real[k_user][1].append((m, r, t)) # the fact/answer part in one record of test dataset
-                else:
-                    test_real[k_user][0].append((m, r, t)) # the input part in one record of test dataset
-    else: 
-        # sort by time: PART 2 <start>
-        print 'sort by time PART 2'
-        for k_user in test:
-            #print 'len(test[k_user]):', len(test[k_user])
-            #print 'num_of_parts_of_test_data:', num_of_parts_of_test_data
-            #raw_input()
-            #print (len(test[k_user]) * (1.0 / num_of_parts_of_test_data))
-            #print (int)(len(test[k_user]) * (1.0 / num_of_parts_of_test_data))
-            split_point_index = -1 * ((int)(len(test[k_user]) * (1.0 / (num_of_parts_of_test_data + 1))))
-            #print 'split_point_index:', split_point_index
-            test_real[k_user] = [test[k_user][:split_point_index], test[k_user][split_point_index:]]
-            #raw_input()
+#    if not sort_by_time:
+#        for k_user in test:
+#            test_real[k_user] = [[], []]
+#            for m, r, t in test[k_user]:
+#                # every record of test dataset is supposed to be splitted into 2 parts: input part and fact/answer part
+#                # How to specify the relative of these parts? 
+#                #  Assign num_of_parts_of_test_data an appropriate value: each record of test dataset is supposed
+#                # to constitute num_of_parts_of_test_data parts, and one of them would serve as the fact/answer part.
+#                if 0 == random.randint(0, num_of_parts_of_test_data):
+#                    test_real[k_user][1].append((m, r, t)) # the fact/answer part in one record of test dataset
+#                else:
+#                    test_real[k_user][0].append((m, r, t)) # the input part in one record of test dataset
+#    else: 
+#        # sort by time: PART 2 <start>
+#        print 'sort by time PART 2'
+    for k_user in test:
+        #print 'len(test[k_user]):', len(test[k_user])
+        #print 'num_of_parts_of_test_data:', num_of_parts_of_test_data
+        #raw_input()
+        #print (len(test[k_user]) * (1.0 / num_of_parts_of_test_data))
+        #print (int)(len(test[k_user]) * (1.0 / num_of_parts_of_test_data))
+        split_point_index = -1 * ((int)(len(test[k_user]) * (1.0 / (num_of_parts_of_test_data + 1))))
+        #print 'split_point_index:', split_point_index
+        test_real[k_user] = [test[k_user][:split_point_index], test[k_user][split_point_index:]]
+        #raw_input()
 
         # sort by time: PART 2 <end>
 
@@ -126,42 +126,6 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, del
     #raw_input('pause')
 
     return train, test_real
-
-
-
-def extract_data_from_file_and_generate_train_and_test__with_time_consideration(filename, M, k, seed, delimiter, test_set_ratio):
-    test = None
-    train = None
-    data = {}
-    random.seed(seed)
-
-    with open(filename , 'r') as f:
-        first_line = f.readline()
-        for i, line in enumerate(f):
-            userId, movieId, rating, timestamp = line.split(delimiter)
-            #userId = int(userId)
-            #movieId = int(movieId)
-            rating = float(rating)
-            timestamp = int(timestamp)
-
-            if userId not in data:
-                data[userId] = []
-            data[userId].append((movieId, rating, timestamp))
-
-    for k in data:
-        data[k].sort(key=lambda x: x[2])
-
-    test = {}
-    train = {}
-    for userId in data:
-        total_len = len(data[userId])
-        if k == random.randint(0, M):
-            test[userId] = data[userId][:(int)(total_len * test_set_ratio)]
-            train[userId] = data[userId][(int)(total_len * test_set_ratio):]
-        else:
-            test[userId] = data[userId][:(int)(total_len * test_set_ratio)]
-            train[userId] = data[userId][(int)(total_len * test_set_ratio):]
-    return train, test
 
 class RecommendatorSystem(object):
     """docstring for RecommendatorSystem"""
@@ -258,27 +222,6 @@ class RecommendatorSystem(object):
         interval = (endtime - starttime).seconds
         print 'metric calculation: time consumption: %d' % (interval)
         return {'recall': metric_recall, 'precision': metric_precision}
-
-#    def precision(self, train, test, N):
-#        starttime = datetime.datetime.now()
-#
-#        hit = 0
-#        all = 0
-#        for user in test.keys():
-#            history = test[user][0]
-#            answer = test[user][1]
-#            tu = [x[0] for x in answer]
-#            rank = self.recommend(history, N)
-#            for item, pui in rank:
-#                if item in tu:
-#                    hit += 1
-#            all += len(rank) #Note: In book RSP, the author used 'all += N'
-#        metric = hit / (all * 1.0)
-#
-#        endtime = datetime.datetime.now()
-#        interval=(endtime - starttime).seconds
-#        print 'precision: time consumption: %d' % (interval)
-#        return metric
 
 class InnerThreadClass(multiprocessing.Process):
     def __init__(self, name, recommendator, total, partial_test_set, N):
