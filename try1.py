@@ -78,8 +78,8 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, del
     userId = None
 
     # sort by time: PART 1<begin>
-    print 'sort by time PART 1'
     if sort_by_time:
+        print 'sort by time PART 1'
         for userId in train:
             train[userId].sort(key=lambda x: x[2])
         for userId in test:
@@ -378,9 +378,10 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         print 'user_similarity: time consumption: %d' % (interval)
         
 
-    def find_K_neighbors(self, interacted_items, K):
+    def find_K_neighbors(self, target_user_history, K):
         ### find K neighbors <begin>
         simi_list_of_user_u = []
+        interacted_items = [x[0] for x in target_user_history]
         for v in self.train.keys():
             #if u == v:
             #    assert(False)
@@ -422,7 +423,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         #print 'target_user_history:', target_user_history
         #print 'interacted_items:', interacted_items
 
-        K_neighbors = self.find_K_neighbors(interacted_items, K)
+        K_neighbors = self.find_K_neighbors(target_user_history, K)
 
         for v, wuv in K_neighbors:
         #for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
@@ -593,9 +594,16 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         self.W = W
         
 
-def user_history2user_repr(model, target_user_history): # target_user_history: It should_be_a_list_of_items_not_tuples_included_items.
+def user_history2user_repr(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
     #print 'target_user_history:', target_user_history
-    return np.average(map(lambda item: model[item], filter(lambda x: x in model, target_user_history)), axis=0)
+    items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    #print 'items_existed_in_model:', items_existed_in_model[0]
+    items_translated_to_vecs = map(lambda x: (model[x[0]], x[1], x[2]), items_existed_in_model)
+    #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
+    items_multiplied_by_rate = map(lambda (vec, rate, timestamp): vec * rate, items_translated_to_vecs)
+    #print 'items_multiplied_by_rate:', items_multiplied_by_rate[0]
+    #raw_input()
+    return np.average(items_multiplied_by_rate, axis=0)
         
 class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
     """docstring for RecommendatorViaDoc2Vec"""
@@ -611,6 +619,7 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
         num_features = para['num_features']
         min_count = para['min_count']
         window = para['window']
+        dm = para['dm']
 
         self.K = para['K']
 
@@ -624,7 +633,7 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
         tricky__load_model = False
         if not tricky__load_model:
             print 'start training'
-            self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
+            self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window, dm=dm)
             print 'training finished'
 
             # If you don't plan to train the model any further, calling 
@@ -637,20 +646,21 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
         else:
             #self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20')
             #self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=300_min_count=3_window=20')
-            self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20.model')
+            #self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20.model')
+            self.model = gensim.models.Doc2Vec.load('ml-100k\\u.data_main_doc2vec_modelnum_features=100_min_count=3_window=20.model')
             
 
         #
         #user set
-        user_id_set = data.keys()
+        #user_id_set = data.keys()
 
         #user history dict
         #user_history = {x: data[x].keys() for x in data}
-        user_history = {x: [y[0] for y in data[x]] for x in data}
+        #user_history = {x: [y[0] for y in data[x]] for x in data}
         #print 'user_history:', user_history
 
         #user repre dict
-        self.user_repre = {uesr_id: user_history2user_repr(self.model, user_history[uesr_id]) for uesr_id in user_history}
+        self.user_repre = {uesr_id: user_history2user_repr(self.model, data[uesr_id]) for uesr_id in data}
         #print 'user_repre:', user_repre
 
         #
@@ -682,11 +692,11 @@ class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
 #        print 'progress: %d/%d. done.' % (step, total)
 #        self.W = W
 
-    def find_K_neighbors(self, interacted_items, K):
+    def find_K_neighbors(self, target_user_history, K):
         ### find K neighbors <begin>
         simi_list_of_user_u = []
         #print 'interacted_items:', interacted_items
-        user_repre_of_u = user_history2user_repr(self.model, interacted_items)
+        user_repre_of_u = user_history2user_repr(self.model, target_user_history)
 
         for v in self.train.keys():
             #if u == v:
@@ -759,6 +769,7 @@ def main_windows():
         seed = 2 
         train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
 
+
         rs = RecommendatorSystemViaCollaborativeFiltering()
         K = 10
         
@@ -801,6 +812,7 @@ def main_windows():
 
         K = 10
         seed = 2 
+        dm = 0
         train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
 
         rs = RecommendatorViaDoc2Vec()
@@ -810,6 +822,7 @@ def main_windows():
             'min_count': 3,
             'window': 20,
             'K': K,
+            'dm': dm,
         })
 
         N = 10
@@ -823,7 +836,8 @@ def main_windows():
         data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
         K = 10
-        seed = 2 
+        seed = 2
+        dm = 0
         #test_set_ratio = 0.2
         train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter, sort_by_time=True)
 
@@ -834,6 +848,7 @@ def main_windows():
             'min_count': 3,
             'window': 20,
             'K': K,
+            'dm': dm,
         })
 
         N = 10
@@ -846,7 +861,8 @@ def main_windows():
 def main_Linux():
     #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
     #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
-    data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
     seed = 2 
     train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
