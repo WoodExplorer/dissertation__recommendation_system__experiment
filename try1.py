@@ -680,8 +680,8 @@ def main_windows():
         rs = RecommendatorViaDoc2Vec()
         rs.setup({'data': train, 
             'model_name': data_filename + '_' + 'main_doc2vec_model',
-            'num_features': 300,
-            'min_count': 5,
+            'num_features': 100,
+            'min_count': 3,
             'window': 2,
             'K': K,
             'dm': dm,
