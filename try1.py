@@ -808,21 +808,24 @@ def main_Linux():
     data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
     seed = 2 
+    K = 10
     train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
 
-#    #rs = RecommendatorSystemViaCollaborativeFiltering()
-#    rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
-#
-#    rs.setup({'train': train})
-#    
-#    for N in xrange(10, 11):
-#    #for N in xrange(3, 50):
-#        print 'N:', N
-#
-#        recall = rs.recall(train, test, N)
-#        print 'recall:', recall
-#        precision = rs.precision(train, test, N)
-#        print 'precision:', precision
+    rs = RecommendatorSystemViaCollaborativeFiltering()
+    #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
+
+    rs.setup({
+        'train': train,
+        'K': K,
+    })
+    
+    for N in xrange(10, 11):
+    #for N in xrange(3, 50):
+        print 'N:', N
+
+        metrics = rs.calculate_metrics(train, test, N)
+        print 'metrics:', metrics
+    exit(0)
 
     ###
 #    rs = RecommendatorViaWord2Vec()
@@ -842,6 +845,7 @@ def main_Linux():
     ###
     N = 10
     K = 10
+    dm = 0
 
     rs = RecommendatorViaDoc2Vec()
     rs.setup({'data': train, 
@@ -850,6 +854,7 @@ def main_Linux():
         'min_count': 3,
         'window': 20,
         'K': K,
+        'dm': dm,
     })
 
     
