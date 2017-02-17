@@ -1,0 +1,480 @@
+def try_DBSCAN(vec_list, eps, min_samples):
+    db = DBSCAN(eps=eps, min_samples=min_samples).fit(vec_list)
+    core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+    core_samples_mask[db.core_sample_indices_] = True
+    labels = db.labels_
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    print n_clusters_
+
+
+-------------------------
+
+
+>>> 
+>>> import numpy as np
+>>> 
+>>> from sklearn.cluster import DBSCAN
+>>> from sklearn import metrics
+>>> from sklearn.datasets.samples_generator import make_blobs
+>>> from sklearn.preprocessing import StandardScaler
+>>> centers = [[1, 1], [-1, -1], [1, -1]]
+>>> X, labels_true = make_blobs(n_samples=750, centers=centers, cluster_std=0.4,
+...                             random_state=0)
+>>> len(X)
+750
+>>> X[0]
+array([ 0.84022039,  1.14802236])
+>>> labels_true[0]
+0
+>>> labels_true[1]
+1
+>>> db = DBSCAN(eps=0.3, min_samples=10).fit(X)
+>>> 
+>>> 
+>>> 
+>>> cx = sqlite3.connect('/home/wsyj/tutorial/tutorial/spiders/my_db.db')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'sqlite3' is not defined
+>>> import sqlite3
+>>> cx = sqlite3.connect('/home/wsyj/tutorial/tutorial/spiders/my_db.db')
+>>> cur = cx.cursor()
+>>> cur.execute('select distinct(item_id) from items_with_synopsis')
+<sqlite3.Cursor object at 0xad188620>
+>>> r = cur.fetchall()
+>>> len(r)
+442
+>>> r[0]
+(15,)
+>>> r = [x[0] for x in r]
+>>> r[0]
+15
+>>> 
+
+
+>>> vec_list = []
+>>> for item in r:
+...     key = str(item)
+...     if key not in m:
+...         continue
+...     vec_list.append(m[key])
+... 
+>>> len(vec_list)
+420
+>>> len(r)
+442
+>>> 
+>>> db = DBSCAN(eps=0.03, min_samples=5).fit(vec_list)
+>>> core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+>>> core_samples_mask[db.core_sample_indices_] = True
+>>> labels = db.labels_
+>>> # Number of clusters in labels, ignoring noise if present.
+... n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+>>> print n_clusters_
+1
+>>> 
+>>> def try_DBSCAN(vec_list, eps, min_samples):
+...     db = DBSCAN(eps=eps, min_samples=min_samples).fit(vec_list)
+...     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+...     core_samples_mask[db.core_sample_indices_] = True
+...     labels = db.labels_
+...     # Number of clusters in labels, ignoring noise if present.
+...     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+...     print n_clusters_
+... 
+>>> f = try_DBSCAN
+
+>>> f(vec_list, 0.0136, 5)
+0
+
+
+M: To find a good eps, min_samples combination, I decided to observe the distribution 
+of distance between point-pairs(?)
+
+>>> len(vec_list)
+420
+>>> np.array
+<built-in function array>
+>>> a1 = np.array(1,0)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: data type not understood
+>>> a1 = np.array([1,0])
+>>> a2 = np.array([1,1])
+>>> a1 * a2
+array([1, 0])
+>>> np.linalg.norm(a1 - a2)
+1.0
+>>> 
+>>> dist_dist = []
+>>> for i in xrange(len(vec_list)):
+...     for j in xrange(i):
+...         dist_dist.append(np.linalg.norm(vec_list[i] - vec_list[j]))
+... 
+>>> 420 * 421 / 2
+88410
+>>> len(dist_dist)
+87990
+>>> np.linalg.norm(a2 - a1)
+1.0
+>>> 419 * 420 / 2
+87990
+
+
+
+>>> np.average(dist_dist)
+0.024663208
+
+
+
+drawing:
+
+>>> import pandas
+>>> import pandas as pd
+>>> df = pd.DataFrame(dist_dist)
+>>> import matplotlib.pyplot as plt
+>>> plt.figure()
+<matplotlib.figure.Figure object at 0xad1a6b4c>
+>>> df.plot.hist(alpha=0.5)
+<matplotlib.axes._subplots.AxesSubplot object at 0xaa942b8c>
+>>> plt.show()
+>>> df.plot.hist(alpha=0.5, bins=20)
+<matplotlib.axes._subplots.AxesSubplot object at 0xaa0b278c>
+>>> plt.show()
+
+
+
+def try_DBSCAN(vec_list, eps, min_samples):
+    db = DBSCAN(eps=eps, min_samples=min_samples).fit(vec_list)
+    core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+    core_samples_mask[db.core_sample_indices_] = True
+    labels = db.labels_
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    #print n_clusters_
+    
+    print('Estimated number of clusters: %d' % n_clusters_)
+    #print("Homogeneity: %0.3f" % metrics.homogeneity_score(labels_true, labels))
+    #print("Completeness: %0.3f" % metrics.completeness_score(labels_true, labels))
+    #print("V-measure: %0.3f" % metrics.v_measure_score(labels_true, labels))
+    #print("Adjusted Rand Index: %0.3f"
+    #  % metrics.adjusted_rand_score(labels_true, labels))
+    #print("Adjusted Mutual Information: %0.3f"
+    #  % metrics.adjusted_mutual_info_score(labels_true, labels))
+    #print("Silhouette Coefficient: %0.3f"
+    #  % metrics.silhouette_score(X, labels))
+    
+    return labels
+
+
+f = try_DBSCAN
+
+
+
+8 clusters:
+>>> labels = f(vec_list, 0.0137, 2)
+8
+
+
+######  PCA
+
+target_names = labels # coming from DBSCAN
+
+>>> from sklearn.decomposition import PCA
+>>> pca = PCA(n_components=2)
+>>> X_r = pca.fit(vec_list).transform(vec_list)
+>>> print('explained variance ratio (first two components): %s'
+...       % str(pca.explained_variance_ratio_))
+
+
+colors = ['navy', 'turquoise', 'darkorange',   'blue', 'green', 'yellow', 'red', 'purple', 'orange',]
+lw = 2
+
+
+for color, i, target_name in zip(colors, [0, 1, 2, 3, 4, 5, 6, 7,], target_names):
+    plt.scatter(X_r[y == i, 0], X_r[y == i, 1], color=color, alpha=.8, lw=lw,
+                label=target_name)
+
+#### 
+M: decided to try another clustering method
+
+http://scikit-learn.org/stable/auto_examples/cluster/plot_affinity_propagation.html#sphx-glr-auto-examples-cluster-plot-affinity-propagation-py
+
+
+from sklearn.cluster import AffinityPropagation
+
+af = AffinityPropagation(preference=-50).fit(vec_list)
+cluster_centers_indices = af.cluster_centers_indices_
+labels = af.labels_
+
+n_clusters_ = len(cluster_centers_indices)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+
+
+
+
+
+####
+
+
+from sklearn.cluster import MeanShift, estimate_bandwidth
+
+# The following bandwidth can be automatically detected using
+bandwidth = estimate_bandwidth(np.array(vec_list), quantile=0.2, n_samples=500)
+
+
+ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
+ms.fit(vec_list)
+labels = ms.labels_
+cluster_centers = ms.cluster_centers_
+
+labels_unique = np.unique(labels)
+n_clusters_ = len(labels_unique)
+
+print("number of estimated clusters : %d" % n_clusters_)
+
+
+### KMeans
+
+from time import time
+from sklearn.cluster import KMeans
+
+n_digits = 8
+data = vec_list
+
+def bench_k_means(estimator, name, data, sample_size=300):
+    t0 = time()
+    estimator.fit(data)
+#    print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f    '#%.3f'
+#          % (name, (time() - t0), estimator.inertia_,
+#             metrics.homogeneity_score(labels, estimator.labels_),
+#             metrics.completeness_score(labels, estimator.labels_),
+#             metrics.v_measure_score(labels, estimator.labels_),
+#             metrics.adjusted_rand_score(labels, estimator.labels_),
+#             metrics.adjusted_mutual_info_score(labels,  estimator.labels_),
+#             #metrics.silhouette_score(data, estimator.labels_,
+#             #                         metric='euclidean',
+#             #                         sample_size=sample_size)
+    print('% 9s   %.2fs    %.3f'
+          % (name, (time() - t0), 
+             metrics.silhouette_score(data, estimator.labels_,
+                                      metric='euclidean',
+                                      sample_size=sample_size)
+))
+
+
+# in this case the seeding of the centers is deterministic, hence we run the
+# kmeans algorithm only once with n_init=1
+pca = PCA(n_components=n_digits).fit(data)
+bench_k_means(KMeans(init=pca.components_, n_clusters=n_digits, n_init=1),
+              name="PCA-based",
+              data=data)
+
+
+n_digits = 10
+pca = PCA(n_components=n_digits).fit(data)
+bench_k_means(KMeans(init=pca.components_, n_clusters=n_digits, n_init=1), name="PCA-based", data=data)
+
+
+#####
+# to find out how many points in each class
+[(x, list(labels).count(x)) for x in set(labels)]
+
+n_digits = 77
+
+>>> y_pred = KMeans(init='k-means++', n_clusters=n_digits, n_init=10).fit_predict(data)
+labels = y_pred
+r = [(x, list(labels).count(x)) for x in set(labels)]
+>>> r.sort(key=lambda x: -1 * x[1])
+>>> r
+[(42, 39), (18, 31), (69, 29), (70, 29), (1, 23), (31, 23), (65, 18), (5, 17), (27, 17), (17, 15), (58, 15), (61, 15), (2, 13), (62, 12), (34, 11), (63, 11), (33, 10), (49, 10), (52, 7), (36, 6), (53, 5), (8, 4), (41, 4), (6, 2), (35, 2), (0, 1), (3, 1), (4, 1), (7, 1), (9, 1), (10, 1), (11, 1), (12, 1), (13, 1), (14, 1), (15, 1), (16, 1), (19, 1), (20, 1), (21, 1), (22, 1), (23, 1), (24, 1), (25, 1), (26, 1), (28, 1), (29, 1), (30, 1), (32, 1), (37, 1), (38, 1), (39, 1), (40, 1), (43, 1), (44, 1), (45, 1), (46, 1), (47, 1), (48, 1), (50, 1), (51, 1), (54, 1), (55, 1), (56, 1), (57, 1), (59, 1), (60, 1), (64, 1), (66, 1), (67, 1), (68, 1), (71, 1), (72, 1), (73, 1), (74, 1), (75, 1), (76, 1)]
+
+接下来，你是不是该把，比如，42号cluster里的元素都找出来看一看……
+
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Day: 2017-02-17
+
+data = np.array(data)
+c = data[y_pred == 76]
+
+item, simi = m.most_similar([c[0]], topn=1)[0]
+assert(simi > 0.9999)
+
+cur.execute('select genres from genres_of_items_with_synopsis where item_id = %s' % item)
+
+r = cur.fetchall()
+
+
+###
+for every item in a cluster:
+
+cluster_label = 76
+
+def find_out_genres_of_items_in_a_cluster(cluster_label, y_pred):
+    c = data[y_pred == cluster_label]
+    
+    item_genre_list = []
+    for member in c:
+        item_id, simi = m.most_similar([member], topn=1)[0]
+        assert(simi > 0.99999)
+        
+        cur.execute('select genres from genres_of_items_with_synopsis where item_id = %s' % item_id)
+        ret = cur.fetchall()
+        ret = [x[0] for x in ret]
+        assert(1 == len(ret))
+        
+        item_genre_list.append((item_id, ret))
+    return item_genre_list
+
+
+
+###
+def find_genre_dist(item_genre_list):
+    dist_dist = reduce(lambda x, y: (None, x[1] + y[1]), item_genre_list)
+    dist_dist = dist_dist[1]
+    dist_dist = [x.split(',') for x in dist_dist]
+    dist_dist = reduce(lambda x, y: x + y, dist_dist)
+    
+    genre_set = set(dist_dist)
+    genre_unique_list = list(genre_set)
+    
+    dist = [(x, list(dist_dist).count(x)) for x in genre_unique_list]
+    dist.sort(key=lambda x: -1 * x[1])
+    
+    return dist
+
+
+
+labels review:
+
+l = [(x, list(y_pred).count(x)) for x in set(y_pred)]
+l.sort(key=lambda x: x[1] * -1)
+
+
+cluster_label = 75
+igl = find_out_genres_of_items_in_a_cluster(cluster_label)
+find_genre_dist(igl)
+
+
+
+###
+
+def bench_k_means(estimator, name, data, sample_size=300):
+    t0 = time()
+    estimator.fit(data)
+
+    print('% 9s   %.2fs    %.3f'
+          % (name, (time() - t0), 
+             metrics.silhouette_score(data, estimator.labels_,
+                                      metric='euclidean',
+                                      sample_size=sample_size)
+))
+    
+    y_pred = estimator.predict(data)
+    return y_pred
+
+
+pred_result_map = {}
+score_map = {}
+prm = pred_result_map
+sample_size = 300
+for n_digits in range(2, 15):
+    name = 'k-means++'
+    t0 = time()
+    estimator = KMeans(init=name, n_clusters=n_digits, n_init=100)
+    estimator.fit(data)
+    
+    silhouette_score = metrics.silhouette_score(data, estimator.labels_, metric='euclidean', sample_size=sample_size)
+    print('n_digits=%d   % 9s   %.2fs    %.3f' % (n_digits, name, (time() - t0), silhouette_score))
+    prm[n_digits] = estimator.labels_
+    score_map[n_digits] = silhouette_score
+
+    
+
+igl_0 = find_out_genres_of_items_in_a_cluster(0, prm[2])    
+find_genre_dist(igl_0)
+
+[(u'Drama', 45), (u'Thriller', 34), (u'Comedy', 24), (u'Action', 22), (u'Crime', 21), (u'Sci-Fi', 15), (u'Mystery', 14), (u'Romance', 12), (u'Adventure', 12), (u'Family', 8), (u'Horror', 8), (u'Fantasy', 7), (u'War', 5), (u'History', 3), (u'Musical', 3), (u'Animation', 2), (u'Music', 2), (u'Biography', 2), (u'Western', 1)]
+
+
+igl_1 = find_out_genres_of_items_in_a_cluster(1, prm[2])    
+find_genre_dist(igl_1)
+
+[(u'Drama', 193), (u'Comedy', 120), (u'Thriller', 94), (u'Romance', 88), (u'Action', 71), (u'Crime', 68), (u'Adventure', 63), (u'Sci-Fi', 48), (u'Fantasy', 42), (u'Family', 34), (u'Mystery', 31), (u'Horror', 30), (u'Biography', 22), (u'War', 19), (u'Musical', 18), (u'Animation', 14), (u'History', 14), (u'Western', 11), (u'Music', 10), (u'Sport', 6), (u'Film-Noir', 6)]
+
+
+
+
+# drawing
+
+	from collections import Counter
+	import numpy as np
+	import matplotlib.pyplot as plt
+	import pandas as pd
+
+	# Read CSV file, get author names and counts.
+	df = pd.read_csv("books.csv", index_col="id")
+	counter = Counter(df['author'])
+	author_names = counter.keys()
+	author_counts = counter.values()
+
+	# Plot histogram using matplotlib bar().
+	indexes = np.arange(len(author_names))
+	width = 0.7
+	plt.bar(indexes, author_counts, width)
+	plt.xticks(indexes + width * 0.5, author_names)
+	plt.show()
+
+
+
+
+### find out all genres
+{
+cur.execute('select genres from genres_of_items_with_synopsis')
+
+ret = cur.fetchall()
+len(ret)
+#442
+ret = [x[0] for x in ret]
+len(ret)
+#442
+ret[0]
+ret = ','.join(ret)
+ret = ret.split(',')
+len(ret)
+#1300
+len(set(ret))
+#21
+all_genres = set(ret)
+all_genres = list(all_genres)
+all_genres.sort()
+}
+
+
+
+
+
+# drawing - pandas barh
+
+import pandas as pd
+
+df2 = pd.DataFrame(np.random.rand(10, 4), columns=['a', 'b', 'c', 'd'])
+
+df2.plot.bar()
+    
+df2.plot.bar(stacked=True)
+
+plt.show()
+
+
+
+
+
+
+

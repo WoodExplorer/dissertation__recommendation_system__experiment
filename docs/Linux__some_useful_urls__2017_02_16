@@ -1,0 +1,67 @@
+
+wiki
+https://en.wikipedia.org/wiki/Affinity_propagation
+https://en.wikipedia.org/wiki/K-means_clustering
+
+gensim official
+http://radimrehurek.com/gensim/tutorial.html#first-example
+http://radimrehurek.com/gensim/tut1.html
+http://radimrehurek.com/gensim/tut3.html
+
+scikit learn
+http://scikit-learn.org/stable/auto_examples/cluster/plot_dbscan.html
+http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_digits.html#sphx-glr-auto-examples-cluster-plot-kmeans-digits-py
+http://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html#sklearn.decomposition.PCA
+http://scikit-learn.org/stable/modules/decomposition.html#pca
+http://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_lda.html#sphx-glr-auto-examples-decomposition-plot-pca-vs-lda-py
+http://scikit-learn.org/stable/modules/clustering.html
+http://scikit-learn.org/stable/modules/clustering.html#k-means
+http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_assumptions.html#sphx-glr-auto-examples-cluster-plot-kmeans-assumptions-py
+http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_digits.html#sphx-glr-auto-examples-cluster-plot-kmeans-digits-py
+http://scikit-learn.org/stable/modules/clustering.html#hierarchical-clustering
+http://scikit-learn.org/stable/auto_examples/cluster/plot_digits_linkage.html#sphx-glr-auto-examples-cluster-plot-digits-linkage-py
+http://scikit-learn.org/stable/modules/clustering.html#mean-shift
+http://scikit-learn.org/stable/auto_examples/cluster/plot_mean_shift.html#sphx-glr-auto-examples-cluster-plot-mean-shift-py
+http://scikit-learn.org/stable/modules/clustering.html#affinity-propagation
+http://scikit-learn.org/stable/auto_examples/cluster/plot_affinity_propagation.html#sphx-glr-auto-examples-cluster-plot-affinity-propagation-py
+http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_assumptions.html#sphx-glr-auto-examples-cluster-plot-kmeans-assumptions-py
+
+imdb genres
+http://www.imdb.com/genre/
+
+python - clustering libraries
+http://stackoverflow.com/questions/5002783/best-python-clustering-library-to-use-for-product-data-analysis
+
+python - clustering with unknown number of clusters
+http://stackoverflow.com/questions/10136470/unsupervised-clustering-with-unknown-number-of-clusters
+
+python - flatten list of lists
+http://stackoverflow.com/questions/2158395/flatten-an-irregular-list-of-lists-in-python
+
+python - named colors in matplotlib
+http://stackoverflow.com/questions/22408237/named-colors-in-matplotlib
+http://matplotlib.org/api/colors_api.html
+
+python - calculate Euclidean Distance
+http://blog.topspeedsnail.com/archives/954
+
+python itertools
+http://www.liaoxuefeng.com/wiki/001374738125095c955c1e6d8bb493182103fac9270762a000/001415616001996f6b32d80b6454caca3d33c965a07611f000
+
+python - data clustering
+https://www.dennogumi.org/2007/11/data-clustering-with-python/
+
+MCL - a cluster algorithm for graphs
+http://micans.org/mcl/
+
+pandas visualization histogram
+http://pandas.pydata.org/pandas-docs/stable/visualization.html#visualization-hist
+
+kaggle
+https://www.kaggle.com/c/word2vec-nlp-tutorial/details/part-2-word-vectors
+
+git - inspecting a repository
+https://www.atlassian.com/git/tutorials/inspecting-a-repository
+
+知乎 word2vec有什么应用？
+https://www.zhihu.com/question/25269336

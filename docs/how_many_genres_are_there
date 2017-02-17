@@ -1,0 +1,112 @@
+r = s.split('\n')
+r1 = filter(lambda x: x.find('|') != -1, r)
+r2 = [ [y.strip() for y in x.split('|')] for x in r1]	
+
+r3 = reduce(lambda x, y: x + y, r2)
+len(set(r3))
+20                            # <===========================
+
+
+>>> ra4 = [len(x) for x in r2]
+>>> ra4
+[3, 3, 4, 3, 3, 3, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 4, 4, 3, 4, 4, 3]
+>>> sum(ra4)
+77				# <===========================
+
+
+---------------
+cool!
+
+>>> n_digits = 77
+>>> bench_k_means(KMeans(init='k-means++', n_clusters=n_digits, n_init=10), name="k-means++", data=data)
+k-means++   0.32s    0   0.942   0.280   0.432   0.037   0.156    
+>>> n_digits = 78
+>>> bench_k_means(KMeans(init='k-means++', n_clusters=n_digits, n_init=10), name="k-means++", data=data)
+k-means++   0.33s    0   0.930   0.264   0.412   0.028   0.138    
+>>> n_digits = 76
+>>> bench_k_means(KMeans(init='k-means++', n_clusters=n_digits, n_init=10), name="k-means++", data=data)
+k-means++   0.33s    0   0.916   0.270   0.417   0.036   0.145    
+>>> 
+
+ 
+
+----------------
+# from imdb
+
+Action »
+
+Comedy | Crime | Thriller
+	
+Adventure »
+
+Biography | Thriller | War
+Animation »
+
+Adventure | Comedy | Family | Fantasy
+	
+Biography »
+
+Crime | Mystery | Sport
+Comedy »
+
+Action | Horror | Romance
+	
+Crime »
+
+Drama | Mystery | Romance
+Documentary »
+
+Biography | Comedy | Crime | History
+	
+Drama »
+
+Romance | Film-Noir | Musical | War
+Family »
+
+Adventure | Comedy | Fantasy | Romance
+	
+Fantasy »
+
+Adventure | Comedy | Drama | Romance
+Film-Noir »
+
+Crime | Mystery | Romance | Thriller
+	
+History »
+
+Adventure | Biography | Drama | War
+Horror »
+
+Comedy | Drama | Sci-Fi
+	
+Music »
+
+Biography | Documentary | Drama
+Musical »
+
+Comedy | History | Romance
+	
+Mystery »
+
+Adventure | Comedy | Thriller
+Romance »
+
+Comedy | Crime | History | Thriller
+	
+Sci-Fi »
+
+Animation | Comedy | Family | Horror
+Sport »
+
+Biography | Comedy | Documentary
+	
+Thriller »
+
+Comedy | Crime | Horror | Mystery
+War »
+
+Action | Biography | Comedy | Documentary
+	
+Western »
+
+Action | Adventure | Comedy 
