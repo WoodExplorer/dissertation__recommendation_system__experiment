@@ -1,0 +1,64 @@
+wiki
+https://en.wikipedia.org/wiki/Silhouette_(clustering)
+
+imdb
+上次看到的那个imdb的genre列表似乎非得在bing里边搜索imdb genres，然后点那个
+Most Popular by Genre - IMDb
+链接才能看到。
+
+python - locate python - where command
+http://stackoverflow.com/questions/17872234/how-to-add-python-to-windows-registry
+
+python - python matplotlib multiple bars
+http://stackoverflow.com/questions/14270391/python-matplotlib-multiple-bars
+
+python - labeling your axes in pandas and matplotlib
+http://jonathansoma.com/lede/data-studio/matplotlib/labeling-your-axes-in-pandas-and-matplotlib/
+
+pandas - visualization
+http://pandas.pydata.org/pandas-docs/stable/visualization.html#visualization-barplot
+
+pandas - M: to be honest, I am not sure about what it is about. Something about matplotlib drawing?
+http://pandas.pydata.org/pandas-docs/stable/indexing.html
+
+stackoverflow - words frequency using pandas and matplotlib
+http://stackoverflow.com/questions/22303554/words-frequency-using-pandas-and-matplotlib
+
+stackoverflow - how to zip lists in a list - special usage of operator '*'
+http://stackoverflow.com/questions/4112265/how-to-zip-lists-in-a-list
+
+stackoverflow - how do you change the size of figures drawn with matplotlib
+http://stackoverflow.com/questions/332289/how-do-you-change-the-size-of-figures-drawn-with-matplotlib
+{
+	fig = matplotlib.pyplot.gcf()
+	fig.set_size_inches(18.5, 10.5)
+	fig.savefig('test2png.png', dpi=100)
+}
+
+stackoverflow - optimized method for calculating cosine distance in python
+http://stackoverflow.com/questions/1823293/optimized-method-for-calculating-cosine-distance-in-python
+{
+	https://docs.scipy.org/doc/scipy/reference/spatial.distance.html is mentioned
+}
+
+stackoverflow - M: I do not know...
+http://stackoverflow.com/questions/20084487/use-index-in-pandas-to-plot-data
+
+stackoverflwo - Add x and y labels to a pandas plot
+http://stackoverflow.com/questions/21487329/add-x-and-y-labels-to-a-pandas-plot
+
+zhihu - 如何系统地学习Python 中 matplotlib, numpy, scipy, pandas？
+https://www.zhihu.com/question/37180159
+
+tuicool - 【学习笔记】Jaccard相似度和广义Jaccard相似度
+http://www.tuicool.com/articles/NVn22q
+
+算法组
+http://suanfazu.com/
+
+csdn - 相似度计算常用方法综述
+http://blog.csdn.net/wangzhiqing3/article/details/8293286
+
+sina - [Ubuntu] linux下sqlite3可视化工具
+http://blog.sina.com.cn/s/blog_68dc52970102vdz0.html
+
