@@ -1,0 +1,20 @@
+sina - [Ubuntu] linux下sqlite3可视化工具
+http://blog.sina.com.cn/s/blog_68dc52970102vdz0.html
+
+gensim - word2vec document. M: Might be of great importance.
+http://radimrehurek.com/gensim/models/word2vec.html
+
+stackoverflow - how to check in sqlite whether a table exists
+http://stackoverflow.com/questions/1601151/how-do-i-check-in-sqlite-whether-a-table-exists
+
+stackoverflow - using sqlite in a python program. M: Sqlite in production circumstance? Interesting, it seems. But might not be relevant to my question about 'how to check in sqlite whether a table exists'?
+http://stackoverflow.com/questions/211501/using-sqlite-in-a-python-program
+
+csdn - sqlite3 表里插入系统时间(时间戳) 
+http://blog.csdn.net/liuzhidong123/article/details/6847104
+
+csdn - sqlite3 数据类型 全面
+http://blog.csdn.net/jin868/article/details/5961263
+
+sqlite - official document
+https://sqlite.org/lang_createtable.html
