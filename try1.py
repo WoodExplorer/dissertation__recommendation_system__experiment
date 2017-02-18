@@ -29,6 +29,7 @@ import logging
 #import threading
 #import thread
 import cPickle
+import sqlite3
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -208,6 +209,7 @@ class RecommendatorSystem(object):
         
         metric_recall = None
         metric_precision = None
+        metric_f1 = None
         if 0 == all__for_recall:
             metric_recall = 0
         else:
@@ -218,10 +220,15 @@ class RecommendatorSystem(object):
         else:
             metric_precision = hit / (all__for_precision * 1.0)
 
+        if 0 == all__for_recall or 0 == all__for_precision:
+            metric_f1 = 0
+        else:
+            metric_f1 = 2/(1./metric_precision + 1./metric_recall)
+
         endtime = datetime.datetime.now()
         interval = (endtime - starttime).seconds
         print 'metric calculation: time consumption: %d' % (interval)
-        return {'recall': metric_recall, 'precision': metric_precision}
+        return {'recall': metric_recall, 'precision': metric_precision, 'f1': metric_f1}
 
 class InnerThreadClass(multiprocessing.Process):
     def __init__(self, name, recommendator, total, partial_test_set, N):
@@ -398,6 +405,8 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         num_features = para['num_features']
         min_count = para['min_count']
         window = para['window']
+        para_iter = para['iter']
+        batch_words = para['batch_words']
 
         self.K = para['K']
 
@@ -408,7 +417,7 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         #print 'list_of_list:', list_of_list
 
         print 'start training'
-        self.model = gensim.models.Word2Vec(list_of_list, size=num_features, min_count=min_count, window=window)
+        self.model = gensim.models.Word2Vec(list_of_list, size=num_features, min_count=min_count, window=window, sg=0, iter=para_iter, batch_words=batch_words)
         print 'training finished'
 
         # If you don't plan to train the model any further, calling 
@@ -730,36 +739,95 @@ def main_Linux():
     K = 10
     train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
 
-    ##
-#    rs = RecommendatorSystemViaCollaborativeFiltering()
-#    #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
-#
-#    rs.setup({
-#        'train': train,
-#        'K': K,
-#    })
-#    
-#    for N in xrange(10, 11):
-#    #for N in xrange(3, 50):
-#        print 'N:', N
-#
-#        metrics = rs.calculate_metrics(train, test, N)
-#        print 'metrics:', metrics
-    
+    ## CF <START>
+    '''rs = RecommendatorSystemViaCollaborativeFiltering()
+    #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
 
-    ###
-    rs = RecommendatorViaWord2Vec()
-    rs.setup({'data': train, 
-        'model_name': 'main_model',
-        'num_features': 200,
-        'min_count': 5,
-        'window': 2,
+    rs.setup({
+        'train': train,
         'K': K,
     })
+    
+    for N in xrange(20, 21):
+    #for N in xrange(10, 11):
+    #for N in xrange(3, 50):
+        print 'N:', N
 
-    N = 10
-    metrics = rs.calculate_metrics(train, test, N)
-    print 'metrics:', metrics
+        metrics = rs.calculate_metrics(train, test, N)
+        print 'metrics:', metrics
+    ## CF <END>
+    exit(0)'''
+    ###
+    N = 20
+    para_iter = 4
+    batch_words = 1
+    table_name_prefix = 'metrics_N_%d__iter_%d__batch_words_%d'
+
+    cx = sqlite3.connect('my_metrics.db')
+    cur = cx.cursor()
+
+    table_name = table_name_prefix % (N, para_iter, batch_words)
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
+    ret = cur.fetchall()
+    if 0 == len(ret):
+        sql = '''create table %s (
+  _row_ID integer	primary key autoincrement,
+  
+  size integer,
+  min_count integer,
+  window integer,
+
+  precision decimal(30, 28),
+  recall decimal(30, 28),
+  f1 decimal(30, 28),
+  
+  CreatedTime TimeStamp NOT NULL DEFAULT (datetime('now','localtime'))
+);''' % (table_name)
+        cur.execute(sql)
+        cx.commit()
+
+    para_size = range(100, 501, 10)
+    para_min_count = range(1, 6, 1)
+    para_window = range(1, 3, 1)
+
+    #para_combs = zip(para_size, para_min_count, para_window)
+    #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
+    para_combs = [(s, mc, w) for w in para_window for mc in para_min_count for s in para_size]
+    #para_combs = [[400, 2, 1]]
+    print para_combs[0]
+    
+    for i, (s, mc, w) in enumerate(para_combs):
+        print "loop %d/%d" % (i, len(para_combs))
+        #if (i < 215):
+        #    continue
+        
+
+        rs = RecommendatorViaWord2Vec()
+        rs.setup({'data': train, 
+            'model_name': 'main_model',
+            'num_features': s,
+            'min_count': mc,
+            'window': w,
+            'K': K,
+            'iter': para_iter,
+            'batch_words': batch_words,
+
+        })
+
+        
+        metrics = rs.calculate_metrics(train, test, N)
+        print metrics
+        precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+        
+        cur.execute('insert into %s (size, min_count, window, precision, recall, f1)' % (table_name) +
+                   'values (%d, %d, %d, %.19f, %.19f, %.19f)' % (s, mc, w, precision, recall, f1))
+
+        cx.commit()
+    cur.close()
+    cx.close()
+    
+
+
 
     ###
 #    N = 10
