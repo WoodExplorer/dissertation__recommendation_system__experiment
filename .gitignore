@@ -66,3 +66,8 @@ tmp_modelnum_features=3_min_count=0_window=20.model
 *.model
 *.model
 tmp_modelnum_features=3_min_count=0_window=20.model
+*.dict
+*.mm
+*.mm.index
+*.*~
+*~
