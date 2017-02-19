@@ -410,7 +410,7 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
 
         self.K = para['K']
 
-        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window)]) + '.model')
+        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window), 'iter=' + str(para_iter)]) + '.model')
 
         #list_of_list = convert_2_level_dict_to_list_of_list(data)
         list_of_list = convert_level_1_dict_level_2_list_of_size_3_tuples_to_list_of_list(data)
@@ -731,9 +731,9 @@ def main_windows():
 
 def main_Linux():
     #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-    #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
+    data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
     #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
-    data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
+    #data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
     seed = 2 
     K = 10
@@ -759,14 +759,15 @@ def main_Linux():
     exit(0)'''
     ###
     N = 20
-    para_iter = 4
-    batch_words = 1
-    table_name_prefix = 'metrics_N_%d__iter_%d__batch_words_%d'
+    para_iter = 35
+    batch_words = 10000
+    data_set = '1M'
+    table_name_prefix = 'metrics_N_%d__iter_%d__batch_words_%d__da_%s'
 
     cx = sqlite3.connect('my_metrics.db')
     cur = cx.cursor()
 
-    table_name = table_name_prefix % (N, para_iter, batch_words)
+    table_name = table_name_prefix % (N, para_iter, batch_words, data_set)
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
     ret = cur.fetchall()
     if 0 == len(ret):
@@ -787,13 +788,13 @@ def main_Linux():
         cx.commit()
 
     para_size = range(100, 501, 10)
-    para_min_count = range(1, 6, 1)
-    para_window = range(1, 3, 1)
+    para_min_count = range(1, 2, 1)
+    para_window = range(3, 4, 1)
 
     #para_combs = zip(para_size, para_min_count, para_window)
     #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
     para_combs = [(s, mc, w) for w in para_window for mc in para_min_count for s in para_size]
-    #para_combs = [[400, 2, 1]]
+    #para_combs = [[480, 1, 4]]
     print para_combs[0]
     
     for i, (s, mc, w) in enumerate(para_combs):

@@ -1,0 +1,24 @@
+csdn.bbs - git pull之后，怎么知道本地哪些文件发生了更新
+http://bbs.csdn.net/topics/391017044
+{
+	刚才写错了, 第二条是 git log -p -1 
+}
+
+v2ex - git pull 之后 有文件改变了 如何查看文件的具体改变情况？ M:可能有用
+https://www.v2ex.com/t/140775
+
+python - surprise doc
+http://surprise.readthedocs.io/en/v1.0.2/dataset.html
+http://surprise.readthedocs.io/en/v1.0.2/prediction_algorithms.html
+
+python - surprise source. M: Examples can be of great help.
+https://github.com/NicolasHug/Surprise/tree/master/examples
+https://github.com/NicolasHug/Surprise/blob/master/examples/iterate_over_folds.py
+https://github.com/NicolasHug/Surprise/blob/master/examples/basic_usage.py
+https://github.com/NicolasHug/Surprise/blob/master/examples/load_custom_dataset.py
+
+ipython - to convert notebook to other formats. M: To convert notebook to script, use 'jupyter nbconvert --to script path_to_notebook'. 'ipython nbconvert' might be obsolete.
+https://ipython.org/ipython-doc/3/notebook/nbconvert.html
+
+pandas - visualization
+http://pandas.pydata.org/pandas-docs/stable/visualization.html#bar-plots
