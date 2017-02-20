@@ -49,7 +49,7 @@ def get_least_numbers_big_data(self, alist, k):
 
     return map(lambda x:-x, max_heap)
 
-def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, delimiter, num_of_parts_of_test_data=4, sort_by_time=False):
+def extract_data_from_file_and_generate_train_and_test(filename, train_percent, seed, delimiter, num_of_parts_of_test_data=4, sort_by_time=False):
     test = None
     train = None
     data = {}
@@ -72,7 +72,9 @@ def extract_data_from_file_and_generate_train_and_test(filename, M, k, seed, del
     train = {}
     for userId in data:
         total_len = len(data[userId])
-        if k == random.randint(0, M):
+        if random.random() >= train_percent:
+        #if 0 == random.randint(0, 2):
+        #if 2 == random.randint(0, 2):
             test[userId] = data[userId]
         else:
             train[userId] = data[userId]
@@ -627,7 +629,7 @@ def main_Linux():
 
     seed = 2 
     K = 10
-    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2. / 3, seed, delimiter)
     #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
 
     ## CF <START>
