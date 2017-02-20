@@ -475,116 +475,6 @@ def user_history2user_repr(model, target_user_history): # target_user_history: I
     #raw_input()
     return np.average(items_multiplied_by_rate, axis=0)
   
-### Doc2vec      
-class RecommendatorViaDoc2Vec(RecommendatorSystemViaCollaborativeFiltering):
-    """docstring for RecommendatorViaDoc2Vec"""
-    def __init__(self):
-        super(RecommendatorViaDoc2Vec, self).__init__()
-        #self.model = None
-        self.W = None
-
-    def setup(self, para):
-        data = para['data']
-        self.train = para['data']
-        model_name = para['model_name'] if 'model_name' in para else 'tmp_model'
-        num_features = para['num_features']
-        min_count = para['min_count']
-        window = para['window']
-        dm = para['dm']
-
-        self.K = para['K']
-
-        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window)]) + '.model')
-
-        #list_of_list = convert_2_level_dict_to_list_of_LabeledSentence(data)
-        list_of_list = convert_level_1_dict_level_2_list_of_size_3_tuples_to_list_of_LabeledSentence(data)
-        #print 'list_of_list:', list_of_list
-
-        # tricky flag used to skip calculation of model from scratch and load model from file
-        tricky__load_model = False
-        if not tricky__load_model:
-            print 'start training'
-            self.model = gensim.models.Doc2Vec(list_of_list, size=num_features, min_count=min_count, window=window, dm=dm)
-            print 'training finished'
-
-            # If you don't plan to train the model any further, calling 
-            # init_sims will make the model much more memory-efficient.
-            self.model.init_sims(replace=True)
-
-            # It can be helpful to create a meaningful model name and 
-            # save the model for later use. You can load it later using Word2Vec.load()
-            self.model.save(model_name)
-        else:
-            #self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20')
-            #self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=300_min_count=3_window=20')
-            #self.model = gensim.models.Doc2Vec.load('ml-latest-small\\ratings.csv_main_doc2vec_modelnum_features=100_min_count=3_window=20.model')
-            self.model = gensim.models.Doc2Vec.load('ml-100k\\u.data_main_doc2vec_modelnum_features=100_min_count=3_window=20.model')
-            
-
-        #
-        #user set
-        #user_id_set = data.keys()
-
-        #user history dict
-        #user_history = {x: data[x].keys() for x in data}
-        #user_history = {x: [y[0] for y in data[x]] for x in data}
-        #print 'user_history:', user_history
-
-        #user repre dict
-        self.user_repre = {uesr_id: user_history2user_repr(self.model, data[uesr_id]) for uesr_id in data}
-        #print 'user_repre:', user_repre
-
-        #
-        #calculate final similarity matrix W
-        
-
-#        W = {}
-#        total = len(user_id_set)
-#        for step, u in enumerate(user_id_set):
-#            simi_list_of_user_u = []
-#            for v in user_id_set:
-#                if u == v:
-#                    continue
-#
-#                simi = user_repre[u].dot(user_repre[v]) / (la.norm(user_repre[u] * la.norm(user_repre[v])))
-#                
-#                simi_list_of_user_u.append((v, simi))
-#
-#                #
-#            K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
-#            #print 'K_neighbors:', K_neighbors
-#            #raw_input()
-#            W[u] = dict(K_neighbors)
-#            #print 'W[u]', W[u]
-#            #raw_input()
-#
-#            if (0 == step % 64):
-#                print 'progress: %d/%d' % (step, total)
-#        print 'progress: %d/%d. done.' % (step, total)
-#        self.W = W
-
-    def find_K_neighbors(self, target_user_history, K):
-        ### find K neighbors <begin>
-        simi_list_of_user_u = []
-        #print 'interacted_items:', interacted_items
-        user_repre_of_u = user_history2user_repr(self.model, target_user_history)
-
-        for v in self.train.keys():
-            #if u == v:
-            #    assert(False)
-            #    continue
-
-            user_v_history = self.user_repre[v]
-            simi = user_repre_of_u.dot(self.user_repre[v]) / (la.norm(user_repre_of_u * la.norm(self.user_repre[v])))
-
-                #
-            simi_list_of_user_u.append((v, simi))
-
-            #
-        K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
-        ### find K neighbors <end>
-        return K_neighbors
-
 
 def print_matrix(M):
     def print_wrapper(x):
@@ -731,16 +621,17 @@ def main_windows():
 
 def main_Linux():
     #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-    data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
+    #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
     #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
-    #data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
+    data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
     seed = 2 
     K = 10
-    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2, 0, seed, delimiter)
+    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
 
     ## CF <START>
-    '''rs = RecommendatorSystemViaCollaborativeFiltering()
+    rs = RecommendatorSystemViaCollaborativeFiltering()
     #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
 
     rs.setup({
@@ -756,7 +647,7 @@ def main_Linux():
         metrics = rs.calculate_metrics(train, test, N)
         print 'metrics:', metrics
     ## CF <END>
-    exit(0)'''
+    exit(0)
     ###
     N = 20
     para_iter = 35
