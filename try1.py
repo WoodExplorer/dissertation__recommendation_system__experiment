@@ -49,7 +49,7 @@ def get_least_numbers_big_data(self, alist, k):
 
     return map(lambda x:-x, max_heap)
 
-def extract_data_from_file_and_generate_train_and_test(filename, train_percent, seed, delimiter, num_of_parts_of_test_data=4, sort_by_time=False):
+def extract_data_from_file_and_generate_train_and_test(filename, train_percent, seed, delimiter, test_data_inner_ratio, sort_by_time=False):
     test = None
     train = None
     data = {}
@@ -116,7 +116,7 @@ def extract_data_from_file_and_generate_train_and_test(filename, train_percent, 
         #raw_input()
         #print (len(test[k_user]) * (1.0 / num_of_parts_of_test_data))
         #print (int)(len(test[k_user]) * (1.0 / num_of_parts_of_test_data))
-        split_point_index = -1 * ((int)(len(test[k_user]) * (1.0 / (num_of_parts_of_test_data + 1))))
+        split_point_index = -1 * ((int)(len(test[k_user]) * test_data_inner_ratio))
         #print 'split_point_index:', split_point_index
         test_real[k_user] = [test[k_user][:split_point_index], test[k_user][split_point_index:]]
         #raw_input()
@@ -620,20 +620,125 @@ def main_windows():
         print 'metrics:', metrics
 
 
+def try_different_train_test_ratio(ttratio, test_data_inner_ratio): # ttratio: train test ratio
+    cx = sqlite3.connect('my_metrics.db')
+    cur = cx.cursor()
 
-def main_Linux():
-    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-    #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
-    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
     data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
 
     seed = 2 
     K = 10
-    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2. / 3, seed, delimiter)
+    N = 20
+
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, ttratio, seed, delimiter, test_data_inner_ratio)
+    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+    para_iter = 35
+    batch_words = 10000
+    data_set = '1M'
+    table_name_prefix = 'ttratio_tiratio__metrics_N_%d__iter_%d__batch_words_%d__da_%s'
+
+    table_name = table_name_prefix % (N, para_iter, batch_words, data_set)
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
+    ret = cur.fetchall()
+    if 0 == len(ret):
+        sql = '''create table %s (
+  _row_ID integer	primary key autoincrement,
+  
+  ttratio decimal(10, 9),
+  test_data_inner_ratio decimal(10, 9),
+
+  size integer,
+  min_count integer,
+  window integer,
+
+  precision decimal(30, 28),
+  recall decimal(30, 28),
+  f1 decimal(30, 28),
+  
+  CreatedTime TimeStamp NOT NULL DEFAULT (datetime('now','localtime'))
+);''' % (table_name)
+        cur.execute(sql)
+        cx.commit()
+
+    para_combs = [[440, 1, 2]]
+    print para_combs[0]
+    
+    for i, (s, mc, w) in enumerate(para_combs):
+        rs = RecommendatorViaWord2Vec()
+        rs.setup({'data': train, 
+            'model_name': 'main_model',
+            'num_features': s,
+            'min_count': mc,
+            'window': w,
+            'K': K,
+            'iter': para_iter,
+            'batch_words': batch_words,
+
+        })
+
+        
+        metrics = rs.calculate_metrics(train, test, N)
+        print metrics
+        precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+        
+        cur.execute('insert into %s (ttratio, test_data_inner_ratio, size, min_count, window, precision, recall, f1)' % (table_name) +
+                   'values (%.19f, %.19f, %d, %d, %d, %.19f, %.19f, %.19f)' % (ttratio, test_data_inner_ratio, s, mc, w, precision, recall, f1))
+
+        cx.commit()
+
+    ## CF <START> #########################################################
+    rs = RecommendatorSystemViaCollaborativeFiltering()
+    #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
+
+    rs.setup({
+        'train': train,
+        'K': K,
+    })
+
+    metrics = rs.calculate_metrics(train, test, N)
+    print 'metrics:', metrics
+
+    precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+        
+    cur.execute('insert into %s (ttratio, test_data_inner_ratio, size, min_count, window, precision, recall, f1)' % (table_name) +
+                   'values ( %.19f, %.19f, %d, %d, %d, %.19f, %.19f, %.19f)' % (ttratio, test_data_inner_ratio, -1, -1, -1, precision, recall, f1))
+    cx.commit()
+    ## CF <END> #########################################################
+    #exit(0)
+    ###
+
+    cur.close()
+    cx.close()
+    
+
+def wrapper__try_different_ttratio_and_tiratio():
+    #train_test_ratio_list = [2. / 3]
+    #train_test_ratio_list = [0.1, 0.2, 0.3, 0.4, 0.5]
+    #train_test_ratio_list = [0.05, 0.06, 0.07, 0.08, 0.09]
+    #train_test_ratio_list = [0.01, 0.02, 0.03, 0.04, 0.05]
+    #for train_test_ratio in train_test_ratio_list:
+    #    try_different_train_test_ratio(train_test_ratio)
+
+    #for train_test_ratio, test_data_inner_ratio in [(0.5, 0.80), (0.5, 0.85), (0.5, 0.9), (0.5, 0.95)]:
+    #for train_test_ratio, test_data_inner_ratio in [(0.5, 0.05), (0.5, 0.06), (0.5, 0.07), (0.5, 0.08)]:
+    for train_test_ratio, test_data_inner_ratio in [(0.02, 0.05), (0.03, 0.05), (0.04, 0.05), (0.05, 0.05)]:
+        try_different_train_test_ratio(train_test_ratio, test_data_inner_ratio)
+
+def main_Linux():
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+
+    seed = 2 
+    K = 10
+    test_data_inner_ratio = 0.25
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2. / 3, seed, delimiter, test_data_inner_ratio)
     #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
 
     ## CF <START>
-    rs = RecommendatorSystemViaCollaborativeFiltering()
+    '''rs = RecommendatorSystemViaCollaborativeFiltering()
     #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
 
     rs.setup({
@@ -649,12 +754,11 @@ def main_Linux():
         metrics = rs.calculate_metrics(train, test, N)
         print 'metrics:', metrics
     ## CF <END>
-    exit(0)
+    exit(0)'''
     ###
     N = 20
     para_iter = 35
     batch_words = 10000
-    data_set = '1M'
     table_name_prefix = 'metrics_N_%d__iter_%d__batch_words_%d__da_%s'
 
     cx = sqlite3.connect('my_metrics.db')
@@ -748,7 +852,8 @@ def main():
         return
 
     if isLinuxSystem():
-        main_Linux()
+        wrapper__try_different_ttratio_and_tiratio()
+#        main_Linux()
         return
 
 
