@@ -1,0 +1,18 @@
+csdn - git 撤销未提交的修改
+http://blog.csdn.net/xbl1986/article/details/8515953
+
+[Cool!]这次事件在一定程度上可以说明，观察人家的工作是多么的有帮助！
+github - Comparison of two algorithms
+https://github.com/NicolasHug/Surprise/blob/master/examples/notebooks/Compare.ipynb
+还有这个，recall和precision什么的！
+https://github.com/NicolasHug/Surprise/commit/a4d525198a826296711c698b7ab8a767c63c5eb5
+其它可能有用的代码
+https://github.com/NicolasHug/Surprise/blob/master/examples/query_for_predictions.py
+https://github.com/NicolasHug/Surprise/blob/master/examples/load_custom_dataset_predefined_folds.py
+https://github.com/NicolasHug/Surprise/blob/master/examples/load_custom_dataset.py
+https://github.com/NicolasHug/Surprise/tree/master/examples
+
+python - surprise: official documentation, official website etc.
+http://surprise.readthedocs.io/en/latest/dataset.html
+http://surprise.readthedocs.io/en/latest/index.html
+http://surpriselib.com/

@@ -1,4 +1,20 @@
 # -*- coding: utf-8 -*-  
+"""Naval Fate.
+
+Usage:
+  naval_fate.py [--cf_on=False]
+  naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
+  naval_fate.py ship shoot <x> <y>
+  naval_fate.py mine (set|remove) <x> <y> [--moored | --drifting]
+  naval_fate.py (-h | --help)
+  naval_fate.py --version
+
+Options:
+  -h --help     Show this screen.
+
+"""
+from docopt import docopt
+
 import os
 import gensim#from gensim.models import word2vec
 import math
@@ -611,6 +627,7 @@ def wrapper__try_different_ttratio_and_tiratio():
         try_different_train_test_ratio(train_test_ratio, test_data_inner_ratio)
 
 def main_Linux():
+    global arguments
     #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
     data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
     #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
@@ -623,23 +640,24 @@ def main_Linux():
     #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
 
     ## CF <START>
-    '''rs = RecommendatorSystemViaCollaborativeFiltering()
-    #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
+    if arguments['--cf_on']:
+        rs = RecommendatorSystemViaCollaborativeFiltering()
+        #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
 
-    rs.setup({
-        'train': train,
-        'K': K,
-    })
+        rs.setup({
+            'train': train,
+            'K': K,
+        })
     
-    for N in xrange(20, 21):
-    #for N in xrange(10, 11):
-    #for N in xrange(3, 50):
-        print 'N:', N
+        for N in xrange(20, 21):
+        #for N in xrange(10, 11):
+        #for N in xrange(3, 50):
+            print 'N:', N
 
-        metrics = rs.calculate_metrics(train, test, N)
-        print 'metrics:', metrics
+            metrics = rs.calculate_metrics(train, test, N)
+            print 'metrics:', metrics
     ## CF <END>
-    exit(0)'''
+    ##exit(0)
     ###
     N = 20
     para_iter = 30
@@ -650,6 +668,7 @@ def main_Linux():
     cur = cx.cursor()
 
     table_name = table_name_prefix % (N, para_iter, batch_words, data_set)
+    print 'table_name:', table_name
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
     ret = cur.fetchall()
     if 0 == len(ret):
@@ -796,5 +815,11 @@ def test():
         print 'metrics:', metrics
 
 if __name__ == '__main__':
+    arguments = docopt(__doc__, version='0.1.1rc')
+    #print(arguments)
+    #print arguments['--cf_on']
+    #exit(0)
+    #print(arguments)
+    #exit(0)
     main()
     #test()

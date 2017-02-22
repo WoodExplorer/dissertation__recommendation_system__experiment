@@ -1,0 +1,19 @@
+word2vec beats CF!
+{
+metrics__normalized_user_repr__N_20__iter_30__batch_words_10000__da_1M
+
+CF
+{'recall': 0.04585755313757266, 'precision': 0.305375, 'f1': 0.0797406172308931}
+word2vec
+(20, 110, 1, 1, 0.334125, 0.05017488315052465, 0.08724792053138651, u'2017-02-22 15:30:46')
+}
+
+
+git gui
+http://www.syntevo.com/smartgit/welcome
+
+11个Linux上最佳的图形化Git客户端
+https://news.cnblogs.com/n/556114
+
+
+
