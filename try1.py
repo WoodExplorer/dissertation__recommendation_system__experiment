@@ -635,11 +635,13 @@ def main_Linux():
 
     seed = 2 
     K = 10
+    train_percent = 0.8
     test_data_inner_ratio = 0.8
-    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 0.8, seed, delimiter, test_data_inner_ratio)
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
     #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
 
     ## CF <START>
+    print arguments['--cf_on']
     if arguments['--cf_on']:
         rs = RecommendatorSystemViaCollaborativeFiltering()
         #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
@@ -702,7 +704,8 @@ def main_Linux():
         print "loop %d/%d" % (i, len(para_combs))
         #if (i < 215):
         #    continue
-        
+
+        starttime = datetime.datetime.now()
 
         rs = RecommendatorViaWord2Vec()
         rs.setup({'data': train, 
@@ -718,7 +721,12 @@ def main_Linux():
 
         
         metrics = rs.calculate_metrics(train, test, N)
+
+        endtime = datetime.datetime.now()
+        interval = (endtime - starttime).seconds
+        print 'time consumption: %d' % (interval)
         print metrics
+
         precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
         
         cur.execute('insert into %s (size, min_count, window, precision, recall, f1)' % (table_name) +

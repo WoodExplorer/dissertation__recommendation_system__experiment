@@ -68,3 +68,5 @@ tmp_modelnum_features=3_min_count=0_window=20.model
 *.*~
 *~
 /try1 (copy).py
+/tmp__svd_test
+/tmp__svd_train

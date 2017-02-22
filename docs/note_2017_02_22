@@ -1,11 +1,24 @@
 word2vec beats CF!
 {
-metrics__normalized_user_repr__N_20__iter_30__batch_words_10000__da_1M
+	sqlite db table: metrics__normalized_user_repr__N_20__iter_30__batch_words_10000__da_1M
 
-CF
-{'recall': 0.04585755313757266, 'precision': 0.305375, 'f1': 0.0797406172308931}
-word2vec
-(20, 110, 1, 1, 0.334125, 0.05017488315052465, 0.08724792053138651, u'2017-02-22 15:30:46')
+	traom_test_ratio:		
+		train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 0.8, seed, delimiter, test_data_inner_ratio)
+
+	test_data_inner_ratio:
+		test_data_inner_ratio = 0.8
+	
+	K = 10
+	N = 20
+	para_iter = 30
+	batch_words = 10000
+
+	CF
+	{'recall': 0.04585755313757266, 'precision': 0.305375, 'f1': 0.0797406172308931}
+	word2vec
+	{'recall': 0.05017488315052465, 'precision': 0.334125, 'f1': 0.08724792053138651}
+
+	(20, 110, 1, 1, 0.334125, 0.05017488315052465, 0.08724792053138651, u'2017-02-22 15:30:46')
 }
 
 
