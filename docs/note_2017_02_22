@@ -21,12 +21,43 @@ word2vec beats CF!
 	(20, 110, 1, 1, 0.334125, 0.05017488315052465, 0.08724792053138651, u'2017-02-22 15:30:46')
 }
 
+svd
+{
 
-git gui
-http://www.syntevo.com/smartgit/welcome
+##### without removing already interacted items    #####
 
-11个Linux上最佳的图形化Git客户端
-https://news.cnblogs.com/n/556114
+	predictions_without_filtering = None
+
+	mid = [(uid, iid, -1) for iid in all_items for uid in all_user_in_test]
+
+	predictions_without_filtering = algo.test(mid)
+
+	mid = None
+
+	rec_without_filtering = generate_rec(predictions_without_filtering)
+
+	calculate_metrics(original_test, rec_without_filtering)
+
+	metric calculation: time consumption: 0
+
+	{'f1': 0.019725711425789216,
+	 'precision': 0.07554166666666666,
+	 'recall': 0.011343941034031822}
 
 
+##### after removing already interacted items    #####
+
+	predictions_with_filtering = algo.test(mid)
+
+	mid = None
+
+	rec_with_filtering = generate_rec(predictions_with_filtering)
+
+	calculate_metrics(original_test, rec_with_filtering)
+
+	metric calculation: time consumption: 0
+
+	{'f1': 0.022369587805528203,
+	 'precision': 0.08566666666666667,
+	 'recall': 0.012864392038593176}
 
