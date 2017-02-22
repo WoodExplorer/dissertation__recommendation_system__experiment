@@ -1,19 +1,4 @@
 # -*- coding: utf-8 -*-  
-
-import platform
- 
-def isWindowsSystem():
-    return 'Windows' in platform.system()
- 
-def isLinuxSystem():
-    return 'Linux' in platform.system()
- 
-if isWindowsSystem():
-    pass
-
-if isLinuxSystem():
-    import redis
-
 import os
 import gensim#from gensim.models import word2vec
 import math
@@ -484,13 +469,10 @@ def user_history2user_repr(model, target_user_history): # target_user_history: I
     items_multiplied_by_rate = items_multiplied_by_rate / sum([x[1] for x in items_translated_to_vecs])
     return items_multiplied_by_rate
 
-  
-
 def print_matrix(M):
     def print_wrapper(x):
         print x, M[x]
     map(lambda x: print_wrapper(x), M)
-
 
 #def extract_data():
 #    filename = 'ml-latest-small\\ratings.csv'
@@ -522,111 +504,6 @@ def print_matrix(M):
 #    #    print line
 #    #
 #    #csvfile.close() 
-
-
-def main_windows():
-    mode_dict = {
-        1: 'RecommendatorSystemViaCollaborativeFiltering',
-        2: 'RecommendatorViaWord2Vec',
-        3: 'RecommendatorViaDoc2Vec',
-        4: 'RecommendatorViaDoc2Vec time'
-    }
-    print mode_dict
-    mode = int(raw_input('Please select mode:'))
-    if 1 == mode:
-        #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-        data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
-
-        seed = 2 
-        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
-
-
-        rs = RecommendatorSystemViaCollaborativeFiltering()
-        K = 10
-        
-        for N in xrange(10, 11):
-        #for N in xrange(3, 50):
-            print 'N:', N
-
-
-            rs.setup({'train': train, 'K': K})
-
-            metrics = rs.calculate_metrics(train, test, N)
-            print 'metrics:', metrics
-    elif 2 == mode:
-        #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-        #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
-        #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
-        data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
-
-        K = 10
-        seed = 2 
-        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
-
-        rs = RecommendatorViaWord2Vec()
-        rs.setup({'data': train, 
-            'model_name': data_filename + '_' + 'main_word2vec_model',
-            'num_features': 100,
-            'min_count': 1,
-            'window': 5,
-            'K': K,
-        })
-
-        N = 10
-        metrics = rs.calculate_metrics(train, test, N)
-        print 'metrics:', metrics
-    elif 3 == mode:
-        #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-        #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
-        #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
-        data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
-
-        K = 10
-        seed = 2 
-        dm = 0
-        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter)
-
-        rs = RecommendatorViaDoc2Vec()
-        rs.setup({'data': train, 
-            'model_name': data_filename + '_' + 'main_doc2vec_model',
-            'num_features': 100,
-            'min_count': 3,
-            'window': 2,
-            'K': K,
-            'dm': dm,
-        })
-
-        N = 10
-        
-        metrics = rs.calculate_metrics(train, test, N)
-        print 'metrics:', metrics
-    elif 4 == mode:
-        #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-        #data_filename, delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
-        #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
-        data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
-
-        K = 10
-        seed = 2
-        dm = 0
-        #test_set_ratio = 0.2
-        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 4, 0, seed, delimiter, sort_by_time=True)
-
-        rs = RecommendatorViaDoc2Vec()
-        rs.setup({'data': train, 
-            'model_name': data_filename + '_' + 'main_doc2vec_model',
-            'num_features': 100,
-            'min_count': 3,
-            'window': 20,
-            'K': K,
-            'dm': dm,
-        })
-
-        N = 10
-        
-        metrics = rs.calculate_metrics(train, test, N)
-        print 'metrics:', metrics
-
 
 def try_different_train_test_ratio(ttratio, test_data_inner_ratio): # ttratio: train test ratio
     cx = sqlite3.connect('my_metrics.db')
@@ -684,7 +561,7 @@ def try_different_train_test_ratio(ttratio, test_data_inner_ratio): # ttratio: t
 
         })
 
-        
+        print 
         metrics = rs.calculate_metrics(train, test, N)
         print metrics
         precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
@@ -831,69 +708,14 @@ def main_Linux():
         cx.commit()
     cur.close()
     cx.close()
-    
-
-
-
-    ###
-#    N = 10
-#    K = 10
-#    dm = 0
-#
-#    rs = RecommendatorViaDoc2Vec()
-#    rs.setup({'data': train, 
-#        'model_name': data_filename + '_' + 'main_doc2vec_model',
-#        'num_features': 300,
-#        'min_count': 3,
-#        'window': 20,
-#        'K': K,
-#        'dm': dm,
-#    })
-#
-#    
-#    metrics = rs.calculate_metrics(train, test, N)
-#    print 'metrics:', metrics
 
 def main():
-    if isWindowsSystem():
-        main_windows()
-        return
-
-    if isLinuxSystem():
-        #wrapper__try_different_ttratio_and_tiratio()
-        main_Linux()
-        return
-
-
-def function(sentences):
-    assert(False)
-    # Set values for various parameters
-    num_features = 300    # Word vector dimensionality                      
-    min_word_count = 40   # Minimum word count                        
-    num_workers = 4       # Number of threads to run in parallel
-    context = 10          # Context window size                                                                                    
-    downsampling = 1e-3   # Downsample setting for frequent words
-
-    # Initialize and train the model (this will take some time)
-    
-    print "Training model..."
-    model = word2vec.Word2Vec(sentences, workers=num_workers, \
-                size=num_features, min_count = min_word_count, \
-                window = context, sample = downsampling)
-
-    # If you don't plan to train the model any further, calling 
-    # init_sims will make the model much more memory-efficient.
-    model.init_sims(replace=True)
-
-    # It can be helpful to create a meaningful model name and 
-    # save the model for later use. You can load it later using Word2Vec.load()
-    model_name = "300features_40minwords_10context.model"
-    model.save(model_name)
-
+    #wrapper__try_different_ttratio_and_tiratio()
+    main_Linux()
+    return
 
 def convert_2_level_dict_to_list_of_list(data):
     return [data[x].keys() for x in data]
-
 
 def convert_2_level_dict_to_list_of_LabeledSentence(data):
     return [gensim.models.doc2vec.LabeledSentence(data[x].keys(), [x]) for x in data]
@@ -920,7 +742,6 @@ def test():
 #    #rs.setup({'data': train, 'model_name': 'test_model'})
 #
 #
-
 
     train = {
     #train = {'A': [('a', 1, 1), ('b', 1, 2), ('d', 1, 3)],
@@ -973,7 +794,6 @@ def test():
         
         metrics = rs.calculate_metrics(train, test, N)
         print 'metrics:', metrics
-
 
 if __name__ == '__main__':
     main()
