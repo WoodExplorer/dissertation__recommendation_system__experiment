@@ -475,7 +475,15 @@ def user_history2user_repr(model, target_user_history): # target_user_history: I
     items_multiplied_by_rate = map(lambda (vec, rate, timestamp): vec * rate, items_translated_to_vecs)
     #print 'items_multiplied_by_rate:', items_multiplied_by_rate[0]
     #raw_input()
-    return np.average(items_multiplied_by_rate, axis=0)
+    
+    ## method 1: simple average. not normalized.
+    #return np.average(items_multiplied_by_rate, axis=0)   
+
+    # method 2: average with normalization
+    items_multiplied_by_rate = np.sum(items_multiplied_by_rate, axis=0)
+    items_multiplied_by_rate = items_multiplied_by_rate / sum([x[1] for x in items_translated_to_vecs])
+    return items_multiplied_by_rate
+
   
 
 def print_matrix(M):
@@ -624,7 +632,7 @@ def try_different_train_test_ratio(ttratio, test_data_inner_ratio): # ttratio: t
     cx = sqlite3.connect('my_metrics.db')
     cur = cx.cursor()
 
-    data_filename, delimiter = os.path.sep.join(['ml-100k', 'u.data']), '\t'
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
 
     seed = 2 
     K = 10
@@ -635,7 +643,6 @@ def try_different_train_test_ratio(ttratio, test_data_inner_ratio): # ttratio: t
 
     para_iter = 35
     batch_words = 10000
-    data_set = '1M'
     table_name_prefix = 'ttratio_tiratio__metrics_N_%d__iter_%d__batch_words_%d__da_%s'
 
     table_name = table_name_prefix % (N, para_iter, batch_words, data_set)
@@ -721,20 +728,21 @@ def wrapper__try_different_ttratio_and_tiratio():
     #    try_different_train_test_ratio(train_test_ratio)
 
     #for train_test_ratio, test_data_inner_ratio in [(0.5, 0.80), (0.5, 0.85), (0.5, 0.9), (0.5, 0.95)]:
-    #for train_test_ratio, test_data_inner_ratio in [(0.5, 0.05), (0.5, 0.06), (0.5, 0.07), (0.5, 0.08)]:
-    for train_test_ratio, test_data_inner_ratio in [(0.02, 0.05), (0.03, 0.05), (0.04, 0.05), (0.05, 0.05)]:
+    #for train_test_ratio, test_data_inner_ratio in [(0.5, 0.05), (0.5, 0.06), (0.5, 0.07), (0.5, 0.08)]:  # good
+    for train_test_ratio, test_data_inner_ratio in [(0.5, 0.5)]:
+    #for train_test_ratio, test_data_inner_ratio in [(0.02, 0.05), (0.03, 0.05), (0.04, 0.05), (0.05, 0.05)]:
         try_different_train_test_ratio(train_test_ratio, test_data_inner_ratio)
 
 def main_Linux():
     #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-    #data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
     #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
-    data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
 
     seed = 2 
     K = 10
-    test_data_inner_ratio = 0.25
-    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 2. / 3, seed, delimiter, test_data_inner_ratio)
+    test_data_inner_ratio = 0.8
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 0.8, seed, delimiter, test_data_inner_ratio)
     #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
 
     ## CF <START>
@@ -757,9 +765,9 @@ def main_Linux():
     exit(0)'''
     ###
     N = 20
-    para_iter = 35
+    para_iter = 30
     batch_words = 10000
-    table_name_prefix = 'metrics_N_%d__iter_%d__batch_words_%d__da_%s'
+    table_name_prefix = 'metrics__normalized_user_repr__N_%d__iter_%d__batch_words_%d__da_%s'
 
     cx = sqlite3.connect('my_metrics.db')
     cur = cx.cursor()
@@ -785,13 +793,13 @@ def main_Linux():
         cx.commit()
 
     para_size = range(100, 501, 10)
-    para_min_count = range(1, 2, 1)
-    para_window = range(3, 4, 1)
+    para_min_count = range(1, 6, 1)
+    para_window = range(1, 6, 1)
 
     #para_combs = zip(para_size, para_min_count, para_window)
     #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
     para_combs = [(s, mc, w) for w in para_window for mc in para_min_count for s in para_size]
-    #para_combs = [[480, 1, 4]]
+    #para_combs = [[220, 1, 3]]
     print para_combs[0]
     
     for i, (s, mc, w) in enumerate(para_combs):
@@ -852,8 +860,8 @@ def main():
         return
 
     if isLinuxSystem():
-        wrapper__try_different_ttratio_and_tiratio()
-#        main_Linux()
+        #wrapper__try_different_ttratio_and_tiratio()
+        main_Linux()
         return
 
 
