@@ -8,7 +8,6 @@ def extract_data_from_file_and_generate_train_and_test(filename, train_percent, 
     random.seed(seed)
 
     with open(filename , 'r') as f:
-        first_line = f.readline()
         for i, line in enumerate(f):
             userId, movieId, rating, timestamp = line.split(delimiter)
             #userId = int(userId)
