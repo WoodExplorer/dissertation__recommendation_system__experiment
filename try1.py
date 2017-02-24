@@ -563,7 +563,7 @@ def main_Linux():
 
     ## CF <START>
     print arguments['--cf_on']
-    if bool(arguments['--cf_on']):
+    if 'True' == arguments['--cf_on']:
         rs = RecommendatorSystemViaCollaborativeFiltering()
         #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
 
