@@ -1,0 +1,43 @@
+{
+	target_user = '5989'
+
+	target_repr = user_repr[target_user]
+	print target_repr
+	simi = [(v, target_repr.dot(user_repr[v]) / (la.norm(target_repr * la.norm(user_repr[v]))))
+		for v in user_item_interaction]
+	simi.sort(key=lambda x: -1 * x[1])
+	print simi[1:K + 1]
+	print simi[-1 * K:]
+
+
+	[('1173', 0.98433083), ('4414', 0.98337185), ('1263', 0.98207539), ('1193', 0.98161274), ('3745', 0.98068571), ('1345', 0.98067909), ('1050', 0.98062062), ('3609', 0.98038757), ('2926', 0.9802829), ('301', 0.97994357)]
+	[('46', 0.81252086), ('94', 0.81181902), ('5772', 0.8113575), ('3282', 0.81064856), ('6034', 0.80263156), ('3623', 0.80058378), ('5577', 0.79087698), ('304', 0.78845209), ('5999', 0.78561974), ('5069', 0.77918357)]
+}
+so, target_user is '5989',
+most similar: '1173',
+most dissimilar: '5069'
+
+
+{
+	# This metric might be of interest.
+	print len(set_target.intersection(set_candy))
+	print len(set_target.union(set_candy))
+	print len(set_target.intersection(set_candy)) * 1. / len(set_target.union(set_candy))
+	print
+	print len(set_target.intersection(set_most_dissimilar_candy))
+	print len(set_target.union(set_most_dissimilar_candy))
+	print len(set_target.intersection(set_most_dissimilar_candy)) * 1. / len(set_target.union(set_most_dissimilar_candy))
+
+39
+399
+0.0977443609023
+
+0
+102
+0.0
+}
+
+
+
+
+
