@@ -73,3 +73,4 @@ tmp_modelnum_features=3_min_count=0_window=20.model
 /tmp_svd.algo
 /chap3_exp2__tmp__svd_test
 /chap3_exp2__tmp__svd_train
+/chap3_exp2__tmp__svd_dump.algo
