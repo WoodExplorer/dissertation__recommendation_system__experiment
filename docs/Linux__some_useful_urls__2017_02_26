@@ -1,0 +1,12 @@
+stackoverflow - how to normalize a vector
+http://stackoverflow.com/questions/21030391/how-to-normalize-array-numpy
+
+stackoverflow - how to calculate combinations in python
+http://stackoverflow.com/questions/3025162/statistics-combinations-in-python
+
+stackoverflow - view all defined variable. M: I find that 'dir()' can work both in python interpreter and python notebook. <== Of course! Chances are python notebook just a web wrapper of python interpreter.
+http://stackoverflow.com/questions/633127/viewing-all-defined-variables
+
+askubuntu - how to install mpfr. M: I am trying to carry out big float arithmetic. Here is the link: "https://pypi.python.org/pypi/bigfloat/". And here is the official website of gnu mpfr library: "http://www.mpfr.org/".
+http://askubuntu.com/questions/394296/how-to-install-mpfr-3-1-2-in-ubuntu-13-04
+
