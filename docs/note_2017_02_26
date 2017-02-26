@@ -1,0 +1,30 @@
+
+progress: 0/1000
+missing_count__cb: 0
+missing_count__svd: 0
+defaultdict(<function <lambda> at 0x8b3a54fc>, {400: defaultdict(<type 'list'>, {'simple_time__rating_time': [320], 'simple__rating': [359], 'rating__simple_time': [98], 'simple__simple_time': [105], 'simple__rating_time': [99], 'rating__rating_time': [95]})})
+defaultdict(<function <lambda> at 0x8b400ae4>, {400: defaultdict(<type 'list'>, {'simple_time__rating_time': [480], 'simple__rating': [441], 'rating__simple_time': [702], 'simple__simple_time': [695], 'simple__rating_time': [701], 'rating__rating_time': [705]})})
+
+
+defaultdict(<function <lambda> at 0x94a50b54>, {400: defaultdict(<type 'list'>, {'simple_time__rating_time': [320], 'simple__rating': [359], 'rating__simple_time': [98], 'simple__simple_time': [105], 'simple__rating_time': [99], 'rating__rating_time': [95]})})
+defaultdict(<function <lambda> at 0x94a5048c>, {400: defaultdict(<type 'list'>, {'simple_time__rating_time': [480], 'simple__rating': [441], 'rating__simple_time': [702], 'simple__simple_time': [695], 'simple__rating_time': [701], 'rating__rating_time': [705]})})
+
+
+{
+verify quantity:
+big:
+	simple - rating			
+	simple time - rating time	
+small:
+	others
+
+'simple_time__rating_time': [320], 'simple__rating': [359], 'rating__simple_time': [98], 'simple__simple_time': [105], 'simple__rating_time': [99], 'rating__rating_time': [95]})})
+'simple_time__rating_time': [480], 'simple__rating': [441], 'rating__simple_time': [702], 'simple__simple_time': [695], 'simple__rating_time': [701], 'rating__rating_time': [705]})}
+
+
+Oh..
+I got it.
+The data above, they are produced by only one sample.
+When average jaccard across samples, the final jaccard might be different.
+
+}
