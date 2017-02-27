@@ -3,6 +3,7 @@
 
 Usage:
   naval_fate.py [--cf_on=False]
+  naval_fate.py [--compare_variants=False]
   naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.py ship shoot <x> <y>
   naval_fate.py mine (set|remove) <x> <y> [--moored | --drifting]
@@ -32,6 +33,7 @@ import logging
 import cPickle
 import sqlite3
 from utility_extract_data import extract_data_from_file_and_generate_train_and_test
+from utility_user_repr import *
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -331,30 +333,39 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         window = para['window']
         para_iter = para['iter']
         batch_words = para['batch_words']
+        load_existed = para['load_existed']
+        
+        self.user_repr_func = get_user_repr_func(para['variant'])
 
         self.K = para['K']
 
         model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window), 'iter=' + str(para_iter)]) + '.model')
 
-        #list_of_list = convert_2_level_dict_to_list_of_list(data)
-        list_of_list = convert_level_1_dict_level_2_list_of_size_3_tuples_to_list_of_list(data)
-        #print 'list_of_list:', list_of_list
+        if load_existed:
+            print 'start loading'
+            self.model = gensim.models.Word2Vec.load(model_name)
+            print 'loading finished'
+        else: # train a new one
 
-        print 'start training'
-        self.model = gensim.models.Word2Vec(list_of_list, size=num_features, min_count=min_count, window=window, sg=0, iter=para_iter, batch_words=batch_words)
-        print 'training finished'
+            #list_of_list = convert_2_level_dict_to_list_of_list(data)
+            list_of_list = convert_level_1_dict_level_2_list_of_size_3_tuples_to_list_of_list(data)
+            #print 'list_of_list:', list_of_list
 
-        # If you don't plan to train the model any further, calling 
-        # init_sims will make the model much more memory-efficient.
-        self.model.init_sims(replace=True)
+            print 'start training'
+            self.model = gensim.models.Word2Vec(list_of_list, size=num_features, min_count=min_count, window=window, sg=0, iter=para_iter, batch_words=batch_words)
+            print 'training finished'
 
-        # It can be helpful to create a meaningful model name and 
-        # save the model for later use. You can load it later using Word2Vec.load()
-        self.model.save(model_name)
+            # If you don't plan to train the model any further, calling 
+            # init_sims will make the model much more memory-efficient.
+            self.model.init_sims(replace=True)
+
+            # It can be helpful to create a meaningful model name and 
+            # save the model for later use. You can load it later using Word2Vec.load()
+            self.model.save(model_name)
 
         #
         #user set
-        user_id_set = data.keys()
+        #user_id_set = data.keys()
 
         #user history dict
         #user_history = {x: data[x].keys() for x in data}
@@ -362,7 +373,7 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
 
         #user repre dict
         #user_repre = {uesr_id: np.average(map(lambda item: self.model[item], user_history[uesr_id]), axis=0) for uesr_id in user_history}
-        self.user_repre = {uesr_id: user_history2user_repr(self.model, data[uesr_id]) for uesr_id in data}
+        self.user_repre = {uesr_id: self.user_repr_func(self.model, data[uesr_id]) for uesr_id in data}
         #print 'user_repre:', user_repre
 
         
@@ -370,7 +381,7 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         ### find K neighbors <begin>
         simi_list_of_user_u = []
         #print 'interacted_items:', interacted_items
-        user_repre_of_u = user_history2user_repr(self.model, target_user_history)
+        user_repre_of_u = self.user_repr_func(self.model, target_user_history)
 
         for v in self.train.keys():
             #if u == v:
@@ -387,24 +398,6 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
         ### find K neighbors <end>
         return K_neighbors
-
-def user_history2user_repr(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
-    #print 'target_user_history:', target_user_history
-    items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
-    #print 'items_existed_in_model:', items_existed_in_model[0]
-    items_translated_to_vecs = map(lambda x: (model[x[0]], x[1], x[2]), items_existed_in_model)
-    #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
-    items_multiplied_by_rate = map(lambda (vec, rate, timestamp): vec * rate, items_translated_to_vecs)
-    #print 'items_multiplied_by_rate:', items_multiplied_by_rate[0]
-    #raw_input()
-    
-    ## method 1: simple average. not normalized.
-    #return np.average(items_multiplied_by_rate, axis=0)   
-
-    # method 2: average with normalization
-    items_multiplied_by_rate = np.sum(items_multiplied_by_rate, axis=0)
-    items_multiplied_by_rate = items_multiplied_by_rate / sum([x[1] for x in items_translated_to_vecs])
-    return items_multiplied_by_rate
 
 def print_matrix(M):
     def print_wrapper(x):
@@ -657,9 +650,117 @@ def main_Linux():
     cur.close()
     cx.close()
 
+def compare_variants():
+    global arguments
+
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+    
+    init_tfidf(data_filename, delimiter) # func of module utility_user_repr
+ 
+    seed = 2 
+    K = 10
+    train_percent = 0.8
+    test_data_inner_ratio = 0.8
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+    N = 20
+    para_iter = 30
+    batch_words = 10000
+    table_name_prefix = 'metrics__chap4_exp2_across_variants__N_%d__iter_%d__da_%s'
+
+    cx = sqlite3.connect('my_metrics.db')
+    cur = cx.cursor()
+
+    table_name = table_name_prefix % (N, para_iter, data_set)
+    print 'table_name:', table_name
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
+    ret = cur.fetchall()
+    if 0 == len(ret):
+        sql = '''create table %s (
+  _row_ID integer	primary key autoincrement,
+  
+  size integer,
+  min_count integer,
+  window integer,
+
+  variant varchar(30),
+
+  precision decimal(30, 28),
+  recall decimal(30, 28),
+  f1 decimal(30, 28),
+  
+  CreatedTime TimeStamp NOT NULL DEFAULT (datetime('now','localtime'))
+);''' % (table_name)
+        cur.execute(sql)
+        cx.commit()
+
+    para_size = range(100, 501, 10)
+    para_min_count = range(1, 6, 1)
+    para_window = range(1, 6, 1)
+
+    #para_combs = zip(para_size, para_min_count, para_window)
+    #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
+    para_combs = [(s, mc, w) for w in para_window for mc in para_min_count for s in para_size]
+    #para_combs = [[220, 1, 3]]
+    print para_combs[0]
+    
+    load_existed = True 		# Careful ! ! !
+
+    for i, (s, mc, w) in enumerate(para_combs):
+        print "loop %d/%d" % (i, len(para_combs))
+        #if (i < 215):
+        #    continue
+
+        for ur_name in ur_dict:
+            #ur_name = ur_simple_tfidf
+            print 'current variant:', ur_name
+
+            starttime = datetime.datetime.now()
+            
+            rs = RecommendatorViaWord2Vec()
+            rs.setup({'data': train, 
+                'model_name': 'main_model',
+                'num_features': s,
+                'min_count': mc,
+                'window': w,
+                'K': K,
+                'iter': para_iter,
+                'batch_words': batch_words,
+                'variant': ur_name,
+                'load_existed': load_existed,
+            })
+
+            
+            metrics = rs.calculate_metrics(train, test, N)
+
+            endtime = datetime.datetime.now()
+            interval = (endtime - starttime).seconds
+            print 'time consumption: %d' % (interval)
+            print metrics
+
+            precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+            
+            cur.execute('insert into %s (size, min_count, window, variant, precision, recall, f1)' % (table_name) +
+                       "values (%d, %d, %d, '%s', %.19f, %.19f, %.19f)" % (s, mc, w, ur_name, precision, recall, f1))
+    
+            cx.commit()
+
+        break  # for i, (s, mc, w) in enumerate(para_combs):
+    cur.close()
+    cx.close()
+
+
 def main():
     #wrapper__try_different_ttratio_and_tiratio()
-    main_Linux()
+    print arguments['--compare_variants']
+    if 'True' == arguments['--compare_variants']:
+        compare_variants()
+    else:
+        main_Linux()
     return
 
 def convert_2_level_dict_to_list_of_list(data):
