@@ -784,7 +784,7 @@ def observe_min_count_and_window():
     N = 20
     para_iter = 30
     batch_words = 10000
-    table_name_prefix = 'metrics__chap4_exp3_across_variants__N_%d__iter_%d__da_%s'
+    table_name_prefix = 'metrics__chap4_exp3_word2vec_hyper__N_%d__iter_%d__da_%s'
 
     cx = sqlite3.connect('my_metrics.db')
     cur = cx.cursor()
