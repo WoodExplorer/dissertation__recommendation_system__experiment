@@ -42,3 +42,33 @@ r = cur.fetchall()
 16 	100 	1 	1 	rating_tfidf 	0.331375 	0.0497619211493 	0.0865298306505 	2017-02-27 09:21:09 
 
 }
+
+
+{
+M: Wow! Finally! Now I know how to draw frequency distribution with few lines of code.
+
+http://pandas.pydata.org/pandas-docs/stable/visualization.html
+
+In [21]: df4 = pd.DataFrame({'a': np.random.randn(1000) + 1, 'b': np.random.randn(1000),
+   ....:                     'c': np.random.randn(1000) - 1}, columns=['a', 'b', 'c'])
+   ....: 
+
+In [22]: plt.figure();
+
+In [23]: df4.plot.hist(alpha=0.5)
+Out[23]: <matplotlib.axes._subplots.AxesSubplot at 0x7ff26779c3d0>
+
+}
+
+{
+M: Oh, it seems pandas understands that -- when it come across a NaN, draw nothing.
+
+df2 = pd.DataFrame(np.array([
+    [1, 5],
+    [2, np.NaN],
+]), columns=['a', 'b'])
+df2.plot.bar()
+
+plt.show()
+
+}
