@@ -4,6 +4,7 @@
 Usage:
   naval_fate.py [--cf_on=False]
   naval_fate.py [--compare_variants=False]
+  naval_fate.py observe_word2vec_hyperpara (min_count | window)
   naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.py ship shoot <x> <y>
   naval_fate.py mine (set|remove) <x> <y> [--moored | --drifting]
@@ -526,6 +527,8 @@ def try_different_train_test_ratio(ttratio, test_data_inner_ratio): # ttratio: t
     cx.close()
     
 
+
+
 def wrapper__try_different_ttratio_and_tiratio():
     #train_test_ratio_list = [2. / 3]
     #train_test_ratio_list = [0.1, 0.2, 0.3, 0.4, 0.5]
@@ -651,7 +654,6 @@ def main_Linux():
     cx.close()
 
 def compare_variants():
-    global arguments
 
     #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
     data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
@@ -754,13 +756,129 @@ def compare_variants():
     cx.close()
 
 
+
+def observe_min_count_and_window():
+    ''' chap 4 exp 3 '''
+    global arguments
+
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+    
+    init_tfidf(data_filename, delimiter) # func of module utility_user_repr
+ 
+    seed = 2 
+    K = 10
+    train_percent = 0.8
+    test_data_inner_ratio = 0.8
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+    N = 20
+    para_iter = 30
+    batch_words = 10000
+    table_name_prefix = 'metrics__chap4_exp3_across_variants__N_%d__iter_%d__da_%s'
+
+    cx = sqlite3.connect('my_metrics.db')
+    cur = cx.cursor()
+
+    table_name = table_name_prefix % (N, para_iter, data_set)
+    print 'table_name:', table_name
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
+    ret = cur.fetchall()
+    if 0 == len(ret):
+        sql = '''create table %s (
+  _row_ID integer	primary key autoincrement,
+  
+  size integer,
+  min_count integer,
+  window integer,
+
+  precision decimal(30, 28),
+  recall decimal(30, 28),
+  f1 decimal(30, 28),
+  
+  CreatedTime TimeStamp NOT NULL DEFAULT (datetime('now','localtime'))
+);''' % (table_name)
+        cur.execute(sql)
+        cx.commit()
+
+    para_size =  range(100, 200 + 1, 20)
+    para_min_count = range(1, 6, 1)
+    para_window = range(1, 6, 1)
+
+    #para_combs = zip(para_size, para_min_count, para_window)
+    #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
+    para_combs = [(s, mc, w) for w in para_window for mc in para_min_count for s in para_size]
+    #para_combs = [[220, 1, 3]]
+    #print para_combs[0]
+
+    print arguments['min_count']
+    if arguments['min_count']:
+        para_combs = [(size, mc, 1) for size in para_size for mc in [1, 3, 5]]
+    else:
+        assert(arguments['window'])
+        para_combs = [(size, 1, w) for size in para_size for w in [1, 3, 5]]
+
+    load_existed = False 		# Careful ! ! !
+    ur_name = ur__rating		# Careful ! ! !
+    for i, (s, mc, w) in enumerate(para_combs):
+        print "loop %d/%d" % (i, len(para_combs))
+        print 'current conf: size=%d, min_count=%d, window=%d' % (s, mc, w)
+        #if (i < 215):
+        #    continue
+
+        starttime = datetime.datetime.now()
+            
+        rs = RecommendatorViaWord2Vec()
+        rs.setup({'data': train, 
+                'model_name': 'main_model',
+                'num_features': s,
+                'min_count': mc,
+                'window': w,
+                'K': K,
+                'iter': para_iter,
+                'batch_words': batch_words,
+                'variant': ur_name,
+                'load_existed': load_existed,
+        })
+
+        metrics = rs.calculate_metrics(train, test, N)
+
+        endtime = datetime.datetime.now()
+        interval = (endtime - starttime).seconds
+        print 'time consumption: %d' % (interval)
+        print metrics
+
+        precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+            
+        cur.execute('insert into %s (size, min_count, window, precision, recall, f1)' % (table_name) +
+                   "values (%d, %d, %d, %.19f, %.19f, %.19f)" % (s, mc, w, precision, recall, f1))
+    
+        cx.commit()
+
+        #break  # for i, (s, mc, w) in enumerate(para_combs):
+    cur.close()
+    cx.close()
+
+
+
 def main():
     #wrapper__try_different_ttratio_and_tiratio()
+    print arguments
+
     print arguments['--compare_variants']
     if 'True' == arguments['--compare_variants']:
         compare_variants()
-    else:
-        main_Linux()
+        return
+
+    print 'observe_word2vec_hyperpara:', arguments['observe_word2vec_hyperpara']
+    if arguments['observe_word2vec_hyperpara']:
+        observe_min_count_and_window()
+        return
+
+    main_Linux()
     return
 
 def convert_2_level_dict_to_list_of_list(data):
