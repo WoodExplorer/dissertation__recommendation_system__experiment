@@ -380,6 +380,7 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         
     def find_K_neighbors(self, target_user_history, K):
         ### find K neighbors <begin>
+        #print 'find_K_neighbors (word2vec)'
         simi_list_of_user_u = []
         #print 'interacted_items:', interacted_items
         user_repre_of_u = self.user_repr_func(self.model, target_user_history)
@@ -617,6 +618,9 @@ def main_Linux():
     #para_combs = [[220, 1, 3]]
     print para_combs[0]
     
+    load_existed = False 		# Careful ! ! !
+    ur_name = ur__rating		# Careful ! ! !
+
     for i, (s, mc, w) in enumerate(para_combs):
         print "loop %d/%d" % (i, len(para_combs))
         #if (i < 215):
@@ -633,7 +637,8 @@ def main_Linux():
             'K': K,
             'iter': para_iter,
             'batch_words': batch_words,
-
+            'variant': ur_name,
+            'load_existed': load_existed,
         })
 
         
