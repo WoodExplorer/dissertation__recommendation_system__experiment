@@ -5,6 +5,7 @@ Usage:
   naval_fate.py [--cf_on=False]
   naval_fate.py [--compare_variants=False]
   naval_fate.py observe_word2vec_hyperpara (min_count | window)
+  naval_fate.py time_overhead
   naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.py ship shoot <x> <y>
   naval_fate.py mine (set|remove) <x> <y> [--moored | --drifting]
@@ -868,6 +869,112 @@ def observe_min_count_and_window():
     cx.close()
 
 
+def time_overhead():
+    ''' chap 4 exp 4 - time complexity '''
+    global arguments
+
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+    
+    init_tfidf(data_filename, delimiter) # func of module utility_user_repr
+ 
+    seed = 2 
+    K = 10
+    #train_percent = 0.8
+    test_data_inner_ratio = 0.8
+    
+    N = 20
+    para_iter = 30
+    batch_words = 10000
+    table_name_prefix = 'metrics__chap4_exp4_time_complexity__N_%d__iter_%d__da_%s'
+
+    cx = sqlite3.connect('my_metrics.db')
+    cur = cx.cursor()
+
+    table_name = table_name_prefix % (N, para_iter, data_set)
+    print 'table_name:', table_name
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
+    ret = cur.fetchall()
+    if 0 == len(ret):
+        sql = '''create table %s (
+  _row_ID integer	primary key autoincrement,
+  
+  size integer,
+  min_count integer,
+  window integer,
+
+  train_percent decimal(30, 28),
+
+  precision decimal(30, 28),
+  recall decimal(30, 28),
+  f1 decimal(30, 28),
+
+  train_overhead integer,
+  test_overhead integer,
+  overall_overhead integer,
+  
+  CreatedTime TimeStamp NOT NULL DEFAULT (datetime('now','localtime'))
+);''' % (table_name)
+        cur.execute(sql)
+        cx.commit()
+
+    para_combs = [[100, 1, 1]]
+    s, mc, w = para_combs[0]
+
+    load_existed = False 		# Careful ! ! !
+    ur_name = ur__rating		# Careful ! ! !
+    train_percent_list = [0.5, 0.6, 0.7, 0.8, 0.9]
+    for i, train_percent in enumerate(train_percent_list):
+        print "loop %d/%d" % (i, len(para_combs))
+        print 'current conf: size=%d, min_count=%d, window=%d' % (s, mc, w)
+        #if (i < 215):
+        #    continue
+
+        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+        #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+        # Of course, data extraction time should not be included.
+        starttime = datetime.datetime.now()
+            
+        rs = RecommendatorViaWord2Vec()
+        rs.setup({'data': train, 
+                'model_name': 'main_model',
+                'num_features': s,
+                'min_count': mc,
+                'window': w,
+                'K': K,
+                'iter': para_iter,
+                'batch_words': batch_words,
+                'variant': ur_name,
+                'load_existed': load_existed,
+        })
+
+        endtime = datetime.datetime.now()
+        train_overhead = (endtime - starttime).seconds
+        print 'train time consumption: %d' % (train_overhead)
+
+        starttime = datetime.datetime.now()
+
+        metrics = rs.calculate_metrics(train, test, N)
+
+        endtime = datetime.datetime.now()
+        test_overhead = (endtime - starttime).seconds
+        print 'test time consumption: %d' % (test_overhead)
+        print metrics
+
+        precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+            
+        cur.execute('insert into %s (size, min_count, window, train_percent, precision, recall, f1, train_overhead, test_overhead, overall_overhead)' % (table_name) +
+                   "values (%d, %d, %d, %.19f, %.19f, %.19f, %.19f, %d, %d, %d)" % (s, mc, w, train_percent, precision, recall, f1, train_overhead, test_overhead, train_overhead + test_overhead))
+    
+        cx.commit()
+
+        #break  # for i, (s, mc, w) in enumerate(para_combs):
+    cur.close()
+    cx.close()
+
 
 def main():
     #wrapper__try_different_ttratio_and_tiratio()
@@ -881,6 +988,10 @@ def main():
     print 'observe_word2vec_hyperpara:', arguments['observe_word2vec_hyperpara']
     if arguments['observe_word2vec_hyperpara']:
         observe_min_count_and_window()
+        return
+
+    if arguments['time_overhead']:
+        time_overhead()
         return
 
     main_Linux()
