@@ -8,6 +8,8 @@ Usage:
   naval_fate.py time_overhead
   naval_fate.py time_overhead_CF
   naval_fate.py observe_CF_when_K_varies
+  naval_fate.py observe_word2vec_when_K_varies
+
   naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.py ship shoot <x> <y>
   naval_fate.py mine (set|remove) <x> <y> [--moored | --drifting]
@@ -661,6 +663,104 @@ def main_Linux():
     cur.close()
     cx.close()
 
+
+
+def observe_word2vec_when_K_varies():
+    global arguments
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+
+    seed = 2 
+    #K = 10
+    train_percent = 0.8
+    test_data_inner_ratio = 0.8
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+    N = 20
+    para_iter = 30
+    batch_words = 10000
+    table_name_prefix = 'metrics__chap4_observe_word2ve_when_K_varies__N_%d__iter_%d__da_%s'
+
+    cx = sqlite3.connect('my_metrics.db')
+    cur = cx.cursor()
+
+    table_name = table_name_prefix % (N, para_iter, data_set)
+    print 'table_name:', table_name
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
+    ret = cur.fetchall()
+    if 0 == len(ret):
+        sql = '''create table %s (
+  _row_ID integer	primary key autoincrement,
+  
+  size integer,
+  min_count integer,
+  window integer,
+
+  K integer,
+  precision decimal(30, 28),
+  recall decimal(30, 28),
+  f1 decimal(30, 28),
+  
+  CreatedTime TimeStamp NOT NULL DEFAULT (datetime('now','localtime'))
+);''' % (table_name)
+        cur.execute(sql)
+        cx.commit()
+
+    #para_size = range(100, 501, 10)
+    #para_min_count = range(1, 6, 1)
+    #para_window = range(1, 6, 1)
+
+    #para_combs = zip(para_size, para_min_count, para_window)
+    #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
+    #para_combs = [(s, mc, w) for w in para_window for mc in para_min_count for s in para_size]
+    #para_combs = [[220, 1, 3]]
+    #print para_combs[0]
+    
+    load_existed = False 		# Careful ! ! !
+    ur_name = ur__rating		# Careful ! ! !
+
+    K_list = [4, 6, 8, 10, 12, 14, 16, 18, 20]
+    s, mc, w = 100, 1, 1
+    for i, K in enumerate(K_list):
+        print "loop %d/%d" % (i, len(K_list))
+        print 'current K: %d' % K
+
+        starttime = datetime.datetime.now()
+
+        rs = RecommendatorViaWord2Vec()
+        rs.setup({'data': train, 
+            'model_name': 'main_model',
+            'num_features': s,
+            'min_count': mc,
+            'window': w,
+            'K': K,
+            'iter': para_iter,
+            'batch_words': batch_words,
+            'variant': ur_name,
+            'load_existed': load_existed,
+        })
+
+        
+        metrics = rs.calculate_metrics(train, test, N)
+
+        endtime = datetime.datetime.now()
+        interval = (endtime - starttime).seconds
+        print 'time consumption: %d' % (interval)
+        print metrics
+
+        precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+        
+        cur.execute('insert into %s (size, min_count, window, K, precision, recall, f1)' % (table_name) +
+                   'values (%d, %d, %d, %d, %.19f, %.19f, %.19f)' % (s, mc, w, K, precision, recall, f1))
+
+        cx.commit()
+    cur.close()
+    cx.close()
+
+
 def compare_variants():
 
     #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
@@ -1200,7 +1300,11 @@ def main():
     if arguments['observe_CF_when_K_varies']:
         observe_CF_when_K_varies()
         return
-
+    
+    if arguments['observe_word2vec_when_K_varies']:
+        observe_word2vec_when_K_varies()
+        return
+    
     main_Linux()
     return
 
