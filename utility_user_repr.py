@@ -12,19 +12,15 @@ def user_history2user_repr__simple(model, target_user_history): # target_user_hi
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
     #print 'items_existed_in_model:', items_existed_in_model[0]
-    items_translated_to_vecs = map(lambda x: (model[x[0]], x[1], x[2]), items_existed_in_model)
+    items_translated_to_vecs = map(lambda x: model[x[0]], items_existed_in_model)
     #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
-    items_multiplied_by_rate = map(lambda (vec, rate, timestamp): vec * rate, items_translated_to_vecs)
+    #items_multiplied_by_rate = map(lambda (vec, rate, timestamp): vec * rate, items_translated_to_vecs)
     #print 'items_multiplied_by_rate:', items_multiplied_by_rate[0]
     #raw_input()
     
     ## method 1: simple average. not normalized.
-    #return np.average(items_multiplied_by_rate, axis=0)   
+    return np.average(items_translated_to_vecs, axis=0)   
 
-    # method 2: average with normalization
-    items_multiplied_by_rate = np.sum(items_multiplied_by_rate, axis=0)
-    items_multiplied_by_rate = items_multiplied_by_rate / sum([x[1] for x in items_translated_to_vecs])
-    return items_multiplied_by_rate
 
 def user_history2user_repr__rating(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
     #print 'target_user_history:', target_user_history
