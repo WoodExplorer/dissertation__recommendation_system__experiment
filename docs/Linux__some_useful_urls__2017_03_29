@@ -1,0 +1,57 @@
+bing - search a .ttf file of a font which supports Chinese - query: chinese font ttf
+http://cn.bing.com/search?q=chinese+font+ttf&qs=n&form=QBRE&sp=-1&pq=chinese+font+ttf&sc=3-16&sk=&cvid=E0C579D75EB1455095DA0AABCDBC4A97
+
+cooltext - Download 新宋体 Sim Sun Font
+https://cooltext.com/Download-Font-%e6%96%b0%e5%ae%8b%e4%bd%93+Sim+Sun
+
+stackoverflow - Display non ascii (Japanese) characters in pandas plot legend          M: Very helpful!
+http://stackoverflow.com/questions/23197124/display-non-ascii-japanese-characters-in-pandas-plot-legend
+
+bing - find out a way to use a font in matplotlib by passing absolute path - query: matplotlib pass font path
+http://cn.bing.com/search?q=matplotlib+pass+font+path&qs=n&form=QBRE&sp=-1&pq=matplotlib+pass+font+path&sc=1-25&sk=&cvid=973BBB0E6C6643119727A6D08246176E
+
+stackoveflow - How to change the font in matplotlib using an absolute path?          M: Very helpful!
+http://stackoverflow.com/questions/25220096/how-to-change-the-font-in-matplotlib-using-an-absolute-path
+
+bing - try to solve the problem of drawing Chinese axis label - query: plt  xlabel  unicode
+http://cn.bing.com/search?q=plt++xlabel++unicode&qs=n&form=QBRE&sp=-1&pq=plt+xlabel+unicode&sc=0-18&sk=&cvid=858834A744B84EBE8899EE92EAD23E55
+
+stackoverflow - non-ascii-characters-in-matplotlib 				     M: Might be useful.
+http://stackoverflow.com/questions/10960463/non-ascii-characters-in-matplotlib
+
+stackoverflow - add-x-and-y-labels-to-a-pandas-plot
+http://stackoverflow.com/questions/21487329/add-x-and-y-labels-to-a-pandas-plot
+
+csdn - pandas 做图显示中文标签  						     M: Might be useful.
+http://blog.csdn.net/xiangqianzsh/article/details/44929529
+
+stackoverflow - set-font-properties-to-tick-labels-with-matplot-lib	 	    M: Might be useful.
+http://stackoverflow.com/questions/7257372/set-font-properties-to-tick-labels-with-matplot-lib
+
+cnblogs - 使用pandas处理数据并绘图的例子	 	 				   M: Might be useful.
+http://www.cnblogs.com/Jerryshome/p/4064614.html
+
+用Pandas作图 									   M: Might be useful.
+http://blog.csdn.net/fennvde007/article/details/37693523
+
+pandas - Visualization								   M: Might be useful.
+http://pandas.pydata.org/pandas-docs/stable/visualization.html#visualization-formatting
+
+quora - How do I install fonts in matplotlib package? 					M: Might be useful.
+https://www.quora.com/How-do-I-install-fonts-in-matplotlib-package
+
+stackoverflow - change-matplotlibs-default-font					M: Might be useful.
+http://stackoverflow.com/questions/21461155/change-matplotlibs-default-font
+
+csdn - pandas+matploblib画图 叠加两张图 						M: Not so useful, at least in my case.
+http://blog.csdn.net/o1101574955/article/details/51623018
+
+csdn - pandas 作图无法显示中文 							M: Not so useful, at least in my case.
+http://blog.csdn.net/u012675539/article/details/51379433
+
+JoinQuant - pandas.DataFrame.plot 图例中文乱码怎么破			M: Not so useful, at least in my case.
+https://www.joinquant.com/post/441
+
+csdn - sqlite数据库判断表是否存在得方法					M: Useful.
+http://blog.csdn.net/zljjava/article/details/7743038
+
