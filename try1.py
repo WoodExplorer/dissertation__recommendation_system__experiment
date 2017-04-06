@@ -330,11 +330,13 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         super(RecommendatorViaWord2Vec, self).__init__()
         #self.model = None
         self.W = None
+        self.model_name = None
 
     def setup(self, para):
         data = para['data']
         self.train = para['data']
-        model_name = para['model_name'] if 'model_name' in para else 'tmp_model'
+
+        self.model_name = para['model_name']
         
         sg = para['sg']
         
@@ -351,11 +353,9 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
 
         self.K = para['K']
 
-        model_name += ('_'.join(['min_count=' + str(min_count), 'window=' + str(window), 'num_features=' + str(num_features), 'iter=' + str(para_iter)]) + '.model')
-
         if load_existed:
             print 'start loading'
-            self.model = gensim.models.Word2Vec.load(model_name)
+            self.model = gensim.models.Word2Vec.load(self.model_name)
             print 'loading finished'
         else: # train a new one
 
@@ -373,7 +373,7 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
 
             # It can be helpful to create a meaningful model name and 
             # save the model for later use. You can load it later using Word2Vec.load()
-            self.model.save(model_name)
+            self.model.save(self.model_name)
 
         #
         #user set
@@ -422,15 +422,16 @@ class RecommendatorViaWord2VecBasedCB(RecommendatorSystem):
         item_file_name, item_file_delimiter, genre_delimiter = para['item_file_name'], para['item_file_delimiter'], para['genre_delimiter']
         rating_file_name, rating_file_delimiter = para['rating_file_name'], para['rating_file_delimiter']
         model_path = para['model_path']
-        self.user_histor2user_repr_function = para['user_histor2user_repr_function']
+        self.user_repr_func = get_user_repr_func(para['variant'])
 
         self.item_info = self.extract_item_info(item_file_name, item_file_delimiter, genre_delimiter)
         self.user_item_interaction = extract_user_item_interaction(rating_file_name, rating_file_delimiter)
         self.model = gensim.models.Word2Vec.load(model_path)
-        self.user_repr = {user: self.user_histor2user_repr_function(self.model, self.user_item_interaction[user]) 
+        self.user_repr = {user: self.user_repr_func(self.model, self.user_item_interaction[user]) 
                      for user in self.user_item_interaction}
         self.item_repr = self.model
         self.all_items = set(self.model.wv.vocab.keys())
+
 
         self.total_user_item_comb = 0
 
@@ -537,10 +538,10 @@ class RecommendatorViaWord2VecBasedCB(RecommendatorSystem):
     def recommend(self, target_user_history, N, K=10):
         '''@K: number of user neighbors considered
         '''
-        print 'word2vec based CB'
+        #print 'word2vec based CB'
 
         history_items = set([x[0] for x in target_user_history])
-        target_user_repr = self.user_histor2user_repr_function(self.model, target_user_history)
+        target_user_repr = self.user_repr_func(self.model, target_user_history)
         candidates = self.all_items - history_items # filtering out those interacted
         #print 'candidates:', candidates
 
@@ -1113,19 +1114,29 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
     
     load_existed = False 		# Careful ! ! !
 
+    
+
+
     for i, current_para in enumerate(para_combs):
         print "loop %d/%d" % (i, len(para_combs))
         print "current para comb: %s" % str(current_para)
         (sg, variant, c_m, mc, w, s, l_r, para_iter) = current_para
+
+        model_name = 'as_model'
+        model_name += ('_'.join(['sg=' + sg, 'variant=' + variant, 'min_count=' + str(mc), 'window=' + str(w), 'num_features=' + str(s), 'learning=' + str(l_r), 'iter=' + str(para_iter)]) + '.model')
 
         assert(sg == "CBOW" or sg == "skip-gram")
         sg = 0 if "CBOW" == sg else 1
 
         starttime = datetime.datetime.now()
             
-        '''rs = RecommendatorViaWord2Vec()
-        rs.setup({'data': train, 
-                'model_name': 'main_model',
+        assert(c_m == 'CF' or c_m == 'content-based')
+        
+        rs = None
+        if ('CF' == c_m):
+            rs = RecommendatorViaWord2Vec()
+            rs.setup({'data': train, 
+                'model_name': model_name,
 
                 'sg': sg,
                 'variant': variant,
@@ -1140,21 +1151,21 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
                 'K': K,
                 'batch_words': batch_words,
                 'load_existed': load_existed,
-        })'''
-
-        rs = RecommendatorViaWord2VecBasedCB()
-        rs.setup({'item_file_name': os.path.sep.join(['ml-1m', 'movies.dat']), 
+            })
+        else:
+            rs = RecommendatorViaWord2VecBasedCB()
+            rs.setup({'item_file_name': os.path.sep.join(['ml-1m', 'movies.dat']), 
                 'item_file_delimiter': '::',
                 'genre_delimiter': '|',
 
                 'rating_file_name': os.path.sep.join(['ml-1m', 'ratings.dat']),
                 'rating_file_delimiter': '::',
 
-                'model_path': '/home/wsyj/dissertation__recommendation_system__experiment_2/dissertation__recommendation_system__experiment/main_modelnum_features=100_min_count=1_window=1_iter=30.model',
+                'model_path': model_name,
 
-                'user_histor2user_repr_function': user_history2user_repr__simple,
-        })
-        print('total_user_item_comb:', rs.total_user_item_comb)
+                'variant': variant,
+            })
+            print('total_user_item_comb:', rs.total_user_item_comb)
 
             
         metrics = rs.calculate_metrics(train, test, N)
@@ -1171,7 +1182,8 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
     
         cx.commit()
 
-        break  # for i, (s, mc, w) in enumerate(para_combs):
+        if 1 == i:
+            break  # for i, (s, mc, w) in enumerate(para_combs):
     cur.close()
     cx.close()
 
