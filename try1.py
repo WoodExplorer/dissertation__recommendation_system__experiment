@@ -1111,6 +1111,7 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
     para_combs = [(sg, variant, c_m, mc, w, s, l_r, para_iter) for sg in para_sg_list for variant in para_variant_list for c_m in para_comb_method_list for mc in para_min_count_list for w in para_window_list for s in para_size_list for l_r in para_learning_rate_list for para_iter in para_iter_list]
     #para_combs = [[220, 1, 3]]
     #print para_combs[0]
+    print "len(para_combs):", len(para_combs)
     
     load_existed = False 		# Careful ! ! !
 
@@ -1182,8 +1183,8 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
     
         cx.commit()
 
-        if 1 == i:
-            break  # for i, (s, mc, w) in enumerate(para_combs):
+        #if 1 == i:
+        #    break  # for i, (s, mc, w) in enumerate(para_combs):
     cur.close()
     cx.close()
 
