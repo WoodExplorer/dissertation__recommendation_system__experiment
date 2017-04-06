@@ -9,6 +9,7 @@ Usage:
   naval_fate.py time_overhead_CF
   naval_fate.py observe_CF_when_K_varies
   naval_fate.py observe_word2vec_when_K_varies
+  naval_fate.py full_comparison
 
   naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.py ship shoot <x> <y>
@@ -334,18 +335,23 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         data = para['data']
         self.train = para['data']
         model_name = para['model_name'] if 'model_name' in para else 'tmp_model'
-        num_features = para['num_features']
+        
+        sg = para['sg']
+        
         min_count = para['min_count']
         window = para['window']
-        para_iter = para['iter']
+        num_features = para['num_features']
+        learning_rate = para['learning_rate']
+        para_iter = para['para_iter']
+
         batch_words = para['batch_words']
         load_existed = para['load_existed']
-        
+
         self.user_repr_func = get_user_repr_func(para['variant'])
 
         self.K = para['K']
 
-        model_name += ('_'.join(['num_features=' + str(num_features), 'min_count=' + str(min_count), 'window=' + str(window), 'iter=' + str(para_iter)]) + '.model')
+        model_name += ('_'.join(['min_count=' + str(min_count), 'window=' + str(window), 'num_features=' + str(num_features), 'iter=' + str(para_iter)]) + '.model')
 
         if load_existed:
             print 'start loading'
@@ -358,7 +364,7 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
             #print 'list_of_list:', list_of_list
 
             print 'start training'
-            self.model = gensim.models.Word2Vec(list_of_list, size=num_features, min_count=min_count, window=window, sg=0, iter=para_iter, batch_words=batch_words)
+            self.model = gensim.models.Word2Vec(list_of_list, sg=sg, min_count=min_count, window=window, size=num_features, alpha=learning_rate, iter=para_iter, batch_words=batch_words)
             print 'training finished'
 
             # If you don't plan to train the model any further, calling 
@@ -865,6 +871,130 @@ def compare_variants():
 
 
 
+def full_comparison():
+    """ Chap 4 exp 1 - comparison of 32 variants.
+    """
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+    
+    init_tfidf(data_filename, delimiter) # func of module utility_user_repr
+ 
+    seed = 2 
+    K = 10
+    train_percent = 0.8
+    test_data_inner_ratio = 0.8
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+    N = 20
+    batch_words = 1000
+    table_name_prefix = 'metrics__chap4_exp1_across_32_variants__N_%d___da_%s'
+
+    cx = sqlite3.connect('my_metrics.db')
+    cur = cx.cursor()
+
+    table_name = table_name_prefix % (N, data_set)
+    print 'table_name:', table_name
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
+    ret = cur.fetchall()
+    if 0 == len(ret):
+        sql = '''create table %s (
+  _row_ID integer	primary key autoincrement,
+  
+  sg varchar(30),
+
+  variant varchar(30),
+
+  comb_method varchar(30),
+  
+  min_count integer,
+  window integer,
+  size integer,
+  learning_rate decimal(30, 28),
+  para_iter integer,
+
+  precision decimal(30, 28),
+  recall decimal(30, 28),
+  f1 decimal(30, 28),
+  
+  CreatedTime TimeStamp NOT NULL DEFAULT (datetime('now','localtime'))
+);''' % (table_name)
+        cur.execute(sql)
+        cx.commit()
+
+    para_sg_list = ["CBOW", "skip-gram"]
+
+    para_variant_list = ur_dict.keys()
+
+    para_comb_method_list = ['CF', 'content-based']
+
+    para_size_list = [100]#range(100, 501, 10)
+    para_min_count_list = [5]#range(1, 6, 1)
+    para_window_list = [5]#range(1, 6, 1)
+    para_learning_rate_list = [0.025]
+    para_iter_list = [5]
+
+
+
+    #para_combs = zip(para_size, para_min_count, para_window)
+    #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
+    para_combs = [(sg, variant, c_m, mc, w, s, l_r, para_iter) for sg in para_sg_list for variant in para_variant_list for c_m in para_comb_method_list for mc in para_min_count_list for w in para_window_list for s in para_size_list for l_r in para_learning_rate_list for para_iter in para_iter_list]
+    #para_combs = [[220, 1, 3]]
+    #print para_combs[0]
+    
+    load_existed = False 		# Careful ! ! !
+
+    for i, current_para in enumerate(para_combs):
+        print "loop %d/%d" % (i, len(para_combs))
+        print "current para comb: %s" % str(current_para)
+        (sg, variant, c_m, mc, w, s, l_r, para_iter) = current_para
+
+        assert(sg == "CBOW" or sg == "skip-gram")
+        sg = 0 if "CBOW" == sg else 1
+
+        starttime = datetime.datetime.now()
+            
+        rs = RecommendatorViaWord2Vec()
+        rs.setup({'data': train, 
+                'model_name': 'main_model',
+
+                'sg': sg,
+                'variant': variant,
+                'comb_method': c_m,
+
+                'min_count': mc,
+                'window': w,
+                'num_features': s,
+                'learning_rate': l_r,
+                'para_iter': para_iter,
+
+                'K': K,
+                'batch_words': batch_words,
+                'load_existed': load_existed,
+        })
+
+            
+        metrics = rs.calculate_metrics(train, test, N)
+
+        endtime = datetime.datetime.now()
+        interval = (endtime - starttime).seconds
+        print 'time consumption: %d' % (interval)
+        print metrics
+
+        precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+            
+        cur.execute('insert into %s (sg, variant, comb_method, min_count, window, size, learning_rate, para_iter, precision, recall, f1)' % (table_name) +
+                       "values ('%s', '%s', '%s', %d, %d, %d, %.19f, %d, %.19f, %.19f, %.19f)" % (sg, variant, c_m, mc, w, s, l_r, para_iter, precision, recall, f1))
+    
+        cx.commit()
+
+        #break  # for i, (s, mc, w) in enumerate(para_combs):
+    cur.close()
+    cx.close()
+
+
 def observe_min_count_and_window():
     ''' chap 4 exp 3 '''
     global arguments
@@ -1303,6 +1433,10 @@ def main():
     
     if arguments['observe_word2vec_when_K_varies']:
         observe_word2vec_when_K_varies()
+        return
+
+    if arguments['full_comparison']:
+        full_comparison()
         return
     
     main_Linux()
