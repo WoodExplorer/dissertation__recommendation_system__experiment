@@ -299,7 +299,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         return K_neighbors
 
     def recommend(self, target_user_history, N, K=10):
-        '''@N: number of user neighbors considered
+        '''@K: number of user neighbors considered
         '''
         rank = {}
         interacted_items = [x[0] for x in target_user_history]
@@ -411,6 +411,173 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
         K_neighbors = heapq.nlargest(self.K * 2, simi_list_of_user_u, key=lambda s: s[1])
         ### find K neighbors <end>
         return K_neighbors
+
+
+### Word2vec based CB
+class RecommendatorViaWord2VecBasedCB(RecommendatorSystem):
+    def __init__(self):
+        super(RecommendatorSystem, self).__init__()
+
+    def setup(self, para):
+        item_file_name, item_file_delimiter, genre_delimiter = para['item_file_name'], para['item_file_delimiter'], para['genre_delimiter']
+        rating_file_name, rating_file_delimiter = para['rating_file_name'], para['rating_file_delimiter']
+        model_path = para['model_path']
+        self.user_histor2user_repr_function = para['user_histor2user_repr_function']
+
+        self.item_info = self.extract_item_info(item_file_name, item_file_delimiter, genre_delimiter)
+        self.user_item_interaction = extract_user_item_interaction(rating_file_name, rating_file_delimiter)
+        self.model = gensim.models.Word2Vec.load(model_path)
+        self.user_repr = {user: self.user_histor2user_repr_function(self.model, self.user_item_interaction[user]) 
+                     for user in self.user_item_interaction}
+        self.item_repr = self.model
+        self.all_items = set(self.model.wv.vocab.keys())
+
+        self.total_user_item_comb = 0
+
+
+    def extract_item_info(self, filename, delimiter, genre_delimiter):
+        data = {}
+
+        with open(filename , 'r') as f:
+            for i, line in enumerate(f):
+                itemId, title, genre_list = map(lambda x: x.strip(), line.split(delimiter))
+
+                data[itemId] = (title, genre_list.split(genre_delimiter))
+        return data
+
+
+    def extract_user_item_interaction(self, filename, delimiter):
+        data = {}
+
+        with open(filename , 'r') as f:
+            for i, line in enumerate(f):
+                userId, movieId, rating, timestamp = line.split(delimiter)
+                #userId = int(userId)
+                #movieId = int(movieId)
+                rating = float(rating)
+                timestamp = int(timestamp)
+
+                if userId not in data:
+                    data[userId] = []
+                data[userId].append((movieId, rating, timestamp))
+
+        # order by time
+        for userId in data:
+            data[userId].sort(key=lambda x: x[2]) 
+        return data
+
+        '''
+    def main():
+        item_file_name, item_file_delimiter, genre_delimiter = os.path.sep.join(['ml-1m', 'movies.dat']), '::', '|'
+        item_info = extract_item_info(item_file_name, item_file_delimiter, genre_delimiter)
+
+
+        rating_file_name, rating_file_delimiter = os.path.sep.join(['ml-1m', 'ratings.dat']), '::'
+        user_item_interaction = extract_user_item_interaction(rating_file_name, rating_file_delimiter)
+
+        model_path = '/home/wsyj/dissertation__recommendation_system__experiment_2/dissertation__recommendation_system__experiment/main_modelnum_features=100_min_count=1_window=1_iter=30.model'
+
+        #model = gensim.models.Word2Vec.load('/home/wsyj/dissertation__recommendation_system__experiment_2/dissertation__recommendation_system__experiment/main_modelnum_features=200_min_count=5_window=2.model' )
+        model = gensim.models.Word2Vec.load(model_path)
+
+        #user_history2user_repr__simple_average(model, user_item_interaction['5989'])   
+
+        # calculate user representation dict
+        user_repr = {user: user_history2user_repr__simple_average(model, user_item_interaction[user]) 
+                     for user in user_item_interaction}
+
+        # item representation
+        item_repr = model
+        #print len(item_repr)
+
+        all_items = set(model.wv.vocab.keys())
+
+        # load train and test datasets
+
+        data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+        #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+        #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+
+        N = 20
+        seed = 2 
+        K = 10
+        train_percent = 0.8
+        test_data_inner_ratio = 0.8
+        test = None
+        train, original_test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+        #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+
+        # main: core of content-based recommendation
+
+        total_user_item_comb = 0
+        rec = {}
+        for user in original_test:
+            history, future = original_test[user]
+            history_items = set([x[0] for x in history])
+            candidates = all_items - history_items # filtering out those interacted
+            #print 'candidates:', candidates
+
+            total_user_item_comb += len(candidates)
+            cand_simi_list = []
+            for candy in candidates:
+                simi = user_repr[user].dot(item_repr[candy]) / (la.norm(user_repr[user]) * la.norm(item_repr[candy]))
+                cand_simi_list.append((candy, simi))
+
+            cand_simi_list.sort(key=lambda x: -1 * x[1])
+
+            rec[user] = cand_simi_list[:N]
+
+        print 'total_user_item_comb:', total_user_item_comb
+
+        metrics = calculate_metrics(original_test, rec)
+        print "metrics:", metrics
+'''
+    
+    def recommend(self, target_user_history, N, K=10):
+        '''@K: number of user neighbors considered
+        '''
+        print 'word2vec based CB'
+
+        history_items = set([x[0] for x in target_user_history])
+        target_user_repr = self.user_histor2user_repr_function(self.model, target_user_history)
+        candidates = self.all_items - history_items # filtering out those interacted
+        #print 'candidates:', candidates
+
+        self.total_user_item_comb += len(candidates)
+        cand_simi_list = []
+        for candy in candidates:
+            simi = target_user_repr.dot(self.item_repr[candy]) / (la.norm(target_user_repr) * la.norm(self.item_repr[candy]))
+            cand_simi_list.append((candy, simi))
+
+        cand_simi_list.sort(key=lambda x: -1 * x[1])
+
+        return cand_simi_list[:N]
+        #####################
+
+'''
+        rank = {}
+        interacted_items = [x[0] for x in target_user_history]
+        #print 'target_user_history:', target_user_history
+        #print 'interacted_items:', interacted_items
+
+        K_neighbors = self.find_K_neighbors(target_user_history, K)
+
+        for v, wuv in K_neighbors:
+        #for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
+            for i, rvi, timestamp in self.train[v]: # rvi: rate of item by user v
+                if i in interacted_items:
+                    #do not recommend items which user u interacted before
+                    continue
+
+                if i not in rank:
+                    rank[i] = 0.0
+                rank[i] += wuv * rvi
+
+        rank = rank.items()
+        rank.sort(key=lambda x: x[1], reverse=True)
+        return rank[:N]'''
+
 
 def print_matrix(M):
     def print_wrapper(x):
@@ -871,7 +1038,7 @@ def compare_variants():
 
 
 
-def full_comparison():
+def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!!!!!!!
     """ Chap 4 exp 1 - comparison of 32 variants.
     """
     #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
@@ -956,7 +1123,7 @@ def full_comparison():
 
         starttime = datetime.datetime.now()
             
-        rs = RecommendatorViaWord2Vec()
+        '''rs = RecommendatorViaWord2Vec()
         rs.setup({'data': train, 
                 'model_name': 'main_model',
 
@@ -973,7 +1140,21 @@ def full_comparison():
                 'K': K,
                 'batch_words': batch_words,
                 'load_existed': load_existed,
+        })'''
+
+        rs = RecommendatorViaWord2VecBasedCB()
+        rs.setup({'item_file_name': os.path.sep.join(['ml-1m', 'movies.dat']), 
+                'item_file_delimiter': '::',
+                'genre_delimiter': '|',
+
+                'rating_file_name': os.path.sep.join(['ml-1m', 'ratings.dat']),
+                'rating_file_delimiter': '::',
+
+                'model_path': '/home/wsyj/dissertation__recommendation_system__experiment_2/dissertation__recommendation_system__experiment/main_modelnum_features=100_min_count=1_window=1_iter=30.model',
+
+                'user_histor2user_repr_function': user_history2user_repr__simple,
         })
+        print('total_user_item_comb:', rs.total_user_item_comb)
 
             
         metrics = rs.calculate_metrics(train, test, N)
@@ -990,7 +1171,7 @@ def full_comparison():
     
         cx.commit()
 
-        #break  # for i, (s, mc, w) in enumerate(para_combs):
+        break  # for i, (s, mc, w) in enumerate(para_combs):
     cur.close()
     cx.close()
 
