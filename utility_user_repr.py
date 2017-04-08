@@ -4,6 +4,20 @@ import math
 import numpy as np
 import collections as coll
 
+class Conf(object):
+    def __init__(self):
+        self.time_coef = 0.9
+
+conf = Conf()
+
+def set_time_coef(val):
+    global conf
+    conf.time_coef = val
+
+def get_time_coef(val):
+    global conf
+    return conf.time_coef
+
 def get_user_repr_func(ur_name):
     global ur_dict
     return ur_dict[ur_name]
@@ -35,7 +49,9 @@ def user_history2user_repr__rating(model, target_user_history): # target_user_hi
 
 
 def user_history2user_repr__simple__time(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
-    time_coef = 0.9
+    global conf
+    time_coef = conf.time_coef
+
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
     #print 'items_existed_in_model:', items_existed_in_model[0]
@@ -49,7 +65,9 @@ def user_history2user_repr__simple__time(model, target_user_history): # target_u
     return w.dot(items_translated_to_vecs) / np.sum(w)
 
 def user_history2user_repr__rating__time(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
-    time_coef = 0.9
+    global conf
+    time_coef = conf.time_coef
+
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
     #print 'num of filtered items:', len(target_user_history) - len(items_existed_in_model)
@@ -139,7 +157,9 @@ def user_history2user_repr__rating__tfidf(model, target_user_history): # target_
 
 def user_history2user_repr__simple__time__tfidf(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
     assert_tfidf_ready()
-    time_coef = 0.9
+    global conf
+    time_coef = conf.time_coef
+
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
     #print 'items_existed_in_model:', items_existed_in_model[0]
@@ -154,7 +174,9 @@ def user_history2user_repr__simple__time__tfidf(model, target_user_history): # t
 
 def user_history2user_repr__rating__time__tfidf(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
     assert_tfidf_ready()
-    time_coef = 0.9
+    global conf
+    time_coef = conf.time_coef
+
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
     #print 'num of filtered items:', len(target_user_history) - len(items_existed_in_model)

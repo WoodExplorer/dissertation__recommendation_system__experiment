@@ -1038,42 +1038,21 @@ def compare_variants():
     cx.close()
 
 
-
-def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!!!!!!!
-    """ Chap 4 exp 1 - comparison of 32 variants.
-    """
-    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
-    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
-    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
-    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
-    
-    init_tfidf(data_filename, delimiter) # func of module utility_user_repr
- 
-    seed = 2 
-    K = 10
-    train_percent = 0.8
-    test_data_inner_ratio = 0.8
-    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
-    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
-
-    N = 20
-    batch_words = 1000
-    table_name_prefix = 'metrics__chap4_exp1_across_32_variants__N_%d___da_%s'
-
+def standard_process(table_name, para_combs, train, test, batch_words):
     cx = sqlite3.connect('my_metrics.db')
     cur = cx.cursor()
 
-    table_name = table_name_prefix % (N, data_set)
-    print 'table_name:', table_name
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
     ret = cur.fetchall()
     if 0 == len(ret):
+        # Note: K is CF-only.
         sql = '''create table %s (
   _row_ID integer	primary key autoincrement,
   
   sg varchar(30),
 
   variant varchar(30),
+  time_coef decimal(30, 28),
 
   comb_method varchar(30),
   
@@ -1082,6 +1061,9 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
   size integer,
   learning_rate decimal(30, 28),
   para_iter integer,
+
+  K integer,						
+  topN integer,		
 
   precision decimal(30, 28),
   recall decimal(30, 28),
@@ -1092,36 +1074,12 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
         cur.execute(sql)
         cx.commit()
 
-    para_sg_list = ["CBOW", "skip-gram"]
-
-    para_variant_list = ur_dict.keys()
-
-    para_comb_method_list = ['CF', 'content-based']
-
-    para_size_list = [100]#range(100, 501, 10)
-    para_min_count_list = [5]#range(1, 6, 1)
-    para_window_list = [5]#range(1, 6, 1)
-    para_learning_rate_list = [0.025]
-    para_iter_list = [5]
-
-
-
-    #para_combs = zip(para_size, para_min_count, para_window)
-    #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
-    para_combs = [(sg, variant, c_m, mc, w, s, l_r, para_iter) for sg in para_sg_list for variant in para_variant_list for c_m in para_comb_method_list for mc in para_min_count_list for w in para_window_list for s in para_size_list for l_r in para_learning_rate_list for para_iter in para_iter_list]
-    #para_combs = [[220, 1, 3]]
-    #print para_combs[0]
-    print "len(para_combs):", len(para_combs)
-    
     load_existed = False 		# Careful ! ! !
-
-    
-
 
     for i, current_para in enumerate(para_combs):
         print "loop %d/%d" % (i, len(para_combs))
         print "current para comb: %s" % str(current_para)
-        (sg, variant, c_m, mc, w, s, l_r, para_iter) = current_para
+        (sg, variant, time_coef, c_m, mc, w, s, l_r, para_iter, K, topN) = current_para
 
         model_name = 'as_model'
         model_name += ('_'.join(['sg=' + sg, 'variant=' + variant, 'min_count=' + str(mc), 'window=' + str(w), 'num_features=' + str(s), 'learning=' + str(l_r), 'iter=' + str(para_iter)]) + '.model')
@@ -1135,6 +1093,7 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
         
         rs = None
         if ('CF' == c_m):
+            set_time_coef(time_coef)
             rs = RecommendatorViaWord2Vec()
             rs.setup({'data': train, 
                 'model_name': model_name,
@@ -1169,7 +1128,7 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
             print('total_user_item_comb:', rs.total_user_item_comb)
 
             
-        metrics = rs.calculate_metrics(train, test, N)
+        metrics = rs.calculate_metrics(train, test, topN)
 
         endtime = datetime.datetime.now()
         interval = (endtime - starttime).seconds
@@ -1178,8 +1137,8 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
 
         precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
             
-        cur.execute('insert into %s (sg, variant, comb_method, min_count, window, size, learning_rate, para_iter, precision, recall, f1)' % (table_name) +
-                       "values ('%s', '%s', '%s', %d, %d, %d, %.19f, %d, %.19f, %.19f, %.19f)" % (sg, variant, c_m, mc, w, s, l_r, para_iter, precision, recall, f1))
+        cur.execute('insert into %s (sg, variant, time_coef, comb_method, min_count, window, size, learning_rate, para_iter, K, topN, precision, recall, f1)' % (table_name) +
+                       "values ('%s', '%s', %.19f, '%s', %d, %d, %d, %.19f, %d, %d, %d, %.19f, %.19f, %.19f)" % (sg, variant, time_coef, c_m, mc, w, s, l_r, para_iter, K, topN, precision, recall, f1))
     
         cx.commit()
 
@@ -1187,6 +1146,56 @@ def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!
         #    break  # for i, (s, mc, w) in enumerate(para_combs):
     cur.close()
     cx.close()
+
+
+def full_comparison():                             # @@CURRENT!!!!!!!!!!!!!!!!!!!!!!!!
+    """ Chap 4 exp 1 - comparison of 32 variants.
+    """
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+    
+    init_tfidf(data_filename, delimiter) # func of module utility_user_repr
+ 
+    seed = 2 
+    train_percent = 0.8
+    test_data_inner_ratio = 0.8
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+    N = 20  # TopN
+    batch_words = 1000
+    table_name_prefix = 'metrics__chap4_exp_new_table_format__N_%d___da_%s'
+
+    table_name = table_name_prefix % (N, data_set)
+    print 'table_name:', table_name
+
+    para_sg_list = ["CBOW", "skip-gram"]
+
+    para_variant_list = ur_dict.keys()
+    para_time_coef_list = [0.9]
+
+    para_comb_method_list = ['CF', 'content-based']
+
+    para_size_list = [100]#range(100, 501, 10)
+    para_min_count_list = [5]#range(1, 6, 1)
+    para_window_list = [5]#range(1, 6, 1)
+    para_learning_rate_list = [0.025]
+    para_iter_list = [5]
+    para_K_list = [10]
+    para_topN_list = [20]
+
+
+    #para_combs = zip(para_size, para_min_count, para_window)
+    #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
+    para_combs = [(sg, variant, time_coef, c_m, mc, w, s, l_r, para_iter, K, topN) for sg in para_sg_list for variant in para_variant_list for time_coef in para_time_coef_list for c_m in para_comb_method_list for mc in para_min_count_list for w in para_window_list for s in para_size_list for l_r in para_learning_rate_list for para_iter in para_iter_list for K in para_K_list for topN in para_topN_list]
+    #para_combs = [[220, 1, 3]]
+    #print para_combs[0]
+    print "len(para_combs):", len(para_combs)
+    
+    standard_process(table_name, para_combs, train, test, batch_words)
+    
 
 
 def observe_min_count_and_window():

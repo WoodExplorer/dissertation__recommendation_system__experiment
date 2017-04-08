@@ -75,3 +75,4 @@ tmp_modelnum_features=3_min_count=0_window=20.model
 /chap3_exp2__tmp__svd_train
 /chap3_exp2__tmp__svd_dump.algo
 /try2.output.dmp
+/try3_why_cannot_access_time_coef.py
