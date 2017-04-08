@@ -407,8 +407,13 @@ class RecommendatorViaWord2Vec(RecommendatorSystemViaCollaborativeFiltering):
             #    continue
 
             user_v_history = self.user_repre[v]
-            simi = user_repre_of_u.dot(self.user_repre[v]) / (la.norm(user_repre_of_u * la.norm(self.user_repre[v])))
 
+            try:
+  
+                simi = user_repre_of_u.dot(self.user_repre[v]) / (la.norm(user_repre_of_u * la.norm(self.user_repre[v])))
+                
+            except TypeError: 
+                continue
                 #
             simi_list_of_user_u.append((v, simi))
 
@@ -1281,7 +1286,7 @@ def exp_mc():                             # @@CURRENT!!!!!!!!!!!!!!!!!!!!!!!!
 
     para_size_list = [100]#range(100, 501, 10)
     #para_min_count_list = range(1, 100 + 1, 10)
-    para_min_count_list = range(700, 700 + 1, 10)
+    para_min_count_list = range(0, 2400 + 1, 300)
     para_window_list = [5]#range(1, 6, 1)
     para_learning_rate_list = [0.025]
     para_iter_list = [5]
