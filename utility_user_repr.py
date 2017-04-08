@@ -25,6 +25,8 @@ def get_user_repr_func(ur_name):
 def user_history2user_repr__simple(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    if 0 == len(items_existed_in_model):
+        return None
     #print 'items_existed_in_model:', items_existed_in_model[0]
     items_translated_to_vecs = map(lambda x: model[x[0]], items_existed_in_model)
     #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
@@ -39,6 +41,8 @@ def user_history2user_repr__simple(model, target_user_history): # target_user_hi
 def user_history2user_repr__rating(model, target_user_history): # target_user_history: It should_be_a_list_of_tuples_included_items.
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    if 0 == len(items_existed_in_model):
+        return None
     #print 'items_existed_in_model:', items_existed_in_model[0]
     items_translated_to_vecs = np.array(map(lambda x: model[x[0]], items_existed_in_model))
     #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
@@ -54,6 +58,8 @@ def user_history2user_repr__simple__time(model, target_user_history): # target_u
 
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    if 0 == len(items_existed_in_model):
+        return None
     #print 'items_existed_in_model:', items_existed_in_model[0]
     items_translated_to_vecs = np.array(map(lambda x: model[x[0]], items_existed_in_model))
     #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
@@ -70,6 +76,8 @@ def user_history2user_repr__rating__time(model, target_user_history): # target_u
 
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    if 0 == len(items_existed_in_model):
+        return None
     #print 'num of filtered items:', len(target_user_history) - len(items_existed_in_model)
     #print 'items_existed_in_model:', items_existed_in_model[0]
     items_translated_to_vecs = np.array(map(lambda x: model[x[0]], items_existed_in_model))
@@ -134,6 +142,8 @@ def user_history2user_repr__simple__tfidf(model, target_user_history): # target_
     assert_tfidf_ready()
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    if 0 == len(items_existed_in_model):
+        return None
     #print 'items_existed_in_model:', items_existed_in_model[0]
     items_translated_to_vecs = np.array(map(lambda x: model[x[0]], items_existed_in_model))
     #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
@@ -146,6 +156,9 @@ def user_history2user_repr__rating__tfidf(model, target_user_history): # target_
     assert_tfidf_ready()
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    if 0 == len(items_existed_in_model):
+        return None
+
     #print 'items_existed_in_model:', items_existed_in_model[0]
     items_translated_to_vecs = np.array(map(lambda x: (model[x[0]]), items_existed_in_model))
     #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
@@ -162,6 +175,8 @@ def user_history2user_repr__simple__time__tfidf(model, target_user_history): # t
 
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    if 0 == len(items_existed_in_model):
+        return None
     #print 'items_existed_in_model:', items_existed_in_model[0]
     items_translated_to_vecs = np.array(map(lambda x: model[x[0]], items_existed_in_model))
     #print 'items_translated_to_vecs:', items_translated_to_vecs[0]
@@ -179,6 +194,8 @@ def user_history2user_repr__rating__time__tfidf(model, target_user_history): # t
 
     #print 'target_user_history:', target_user_history
     items_existed_in_model = filter(lambda x: x[0] in model, target_user_history)
+    if 0 == len(items_existed_in_model):
+        return None
     #print 'num of filtered items:', len(target_user_history) - len(items_existed_in_model)
     #print 'items_existed_in_model:', items_existed_in_model[0]
     items_translated_to_vecs = np.array(map(lambda x: model[x[0]], items_existed_in_model))
