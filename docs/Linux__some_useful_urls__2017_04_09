@@ -1,22 +1,31 @@
-Try/Except in Python: How do you properly ignore Exceptions?
+如何自动保存matplotlib生成的图片
 M:
 M: Useful.
-http://stackoverflow.com/questions/730764/try-except-in-python-how-do-you-properly-ignore-exceptions
+https://segmentfault.com/q/1010000007173698
 
-
-Python中的Class
+Common xlabel/ylabel for matplotlib subplots
 M:
 M: Might be useful.
-http://www.cnblogs.com/hongten/p/hongten_python_class.html
+http://stackoverflow.com/questions/16150819/common-xlabel-ylabel-for-matplotlib-subplots
 
-bing - word2vec window size influence
-M: This is a query I made in bing when I want to find out the influence of window size on recommendation metrics. After glancing through query result returned by bing, I realize that, maybe, "effect" is better than "influence".
+
+Pyplot, main title, subplot - Simple question: I am using pyplot, I have 4 subplots. How to set a single, main title above all the subplots? title() sets it above the last subplot.
+M:
 M: Might be useful.
-http://cn.bing.com/search?q=word2vec+window+size+influence&qs=n&form=QBRE&sp=-1&pq=word2vec+window+size+influence&sc=0-20&sk=&cvid=138CAC7EFB3C4ACFBACA6E594DC11DB6
+http://stackoverflow.com/questions/7066121/pyplot-main-title-subplot
 
-Word2Vec: Effect of window size used
+pylab_examples example code: subplots_demo.py¶
+M: Official demo. M: I almost forget it - official documents might be handy help. (But maybe I am just to lazy to look them up.)
+M: Might be useful.
+http://matplotlib.org/examples/pylab_examples/subplots_demo.html
+
+SQlite: select into?
 M:
 M: Useful.
-http://stackoverflow.com/questions/22272370/word2vec-effect-of-window-size-used
+http://stackoverflow.com/questions/2027488/sqlite-select-into
 
+python random从集合中随机选择元素
+M:
+M: Useful.
+http://outofmemory.cn/code-snippet/4121/python-random-select-from-list
 
