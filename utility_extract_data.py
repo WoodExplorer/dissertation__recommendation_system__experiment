@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import random
 
-def extract_data_from_file_and_generate_train_and_test(filename, train_percent, seed, delimiter, test_data_inner_ratio, sort_by_time=False):
+def extract_data_from_file_and_generate_train_and_test(filename, train_percent, seed, delimiter, test_data_inner_ratio, sort_by_time=False, test_fixed_ratio=None):
     test = None
     train = None
     data = {}
     random.seed(seed)
 
+    total_users = None
     with open(filename , 'r') as f:
         for i, line in enumerate(f):
             userId, movieId, rating, timestamp = line.split(delimiter)
@@ -18,6 +19,7 @@ def extract_data_from_file_and_generate_train_and_test(filename, train_percent, 
             if userId not in data:
                 data[userId] = []
             data[userId].append((movieId, rating, timestamp))
+    total_users = len(data.keys())
 
     test = {}
     train = {}
@@ -26,9 +28,20 @@ def extract_data_from_file_and_generate_train_and_test(filename, train_percent, 
         if random.random() >= train_percent:
         #if 0 == random.randint(0, 2):
         #if 2 == random.randint(0, 2):
-            test[userId] = data[userId]
+            add_it = True
+            if test_fixed_ratio is None:
+                pass
+            else:
+                if len(test) >= (train_percent * total_users * test_fixed_ratio):
+                    add_it = False
+            if add_it:    
+                test[userId] = data[userId]
         else:
             train[userId] = data[userId]
+
+    print 'len(train):', len(train)
+    print 'len(test):', len(test)
+
     userId = None
 
     for userId in test:
