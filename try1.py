@@ -1349,11 +1349,11 @@ def exp_window():                             # @@CURRENT!!!!!!!!!!!!!!!!!!!!!!!
 
     para_comb_method_list = ['CF']
 
-    para_size_list = range(1, 100, 1001, 100)
+    para_size_list = [100]
     #para_min_count_list = range(1, 100 + 1, 10)
     para_min_count_list = [5]#range(0, 2400 + 1, 300)
     #para_window_list = range(10, 100 + 1, 10)
-    para_window_list = [5]#range(1, 10 + 1, 1)
+    para_window_list = range(1, 10 + 1, 1)
     para_learning_rate_list = [0.025]
     para_iter_list = [5]
     para_K_list = [10]
@@ -1399,11 +1399,11 @@ def exp_size():                             # @@CURRENT!!!!!!!!!!!!!!!!!!!!!!!!
 
     para_comb_method_list = ['CF']
 
-    para_size_list = [100]#range(100, 501, 10)
+    para_size_list = range(20, 180 + 1, 20)
     #para_min_count_list = range(1, 100 + 1, 10)
     para_min_count_list = [5]#range(0, 2400 + 1, 300)
     #para_window_list = range(10, 100 + 1, 10)
-    para_window_list = range(1, 10 + 1, 1)
+    para_window_list = [5]
     para_learning_rate_list = [0.025]
     para_iter_list = [5]
     para_K_list = [10]
