@@ -15,6 +15,7 @@ Usage:
   naval_fate.py exp_window
   naval_fate.py exp_size
   naval_fate.py exp_learning_rate
+  naval_fate.py exp_iter
 
   naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.py ship shoot <x> <y>
@@ -266,7 +267,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         print 'user_similarity: time consumption: %d' % (interval)
         
 
-    def find_K_neighbors(self, target_user_history, K):
+    def find_K_neighbors(self, target_user_history):
         ### find K neighbors <begin>
         simi_list_of_user_u = []
         interacted_items = [x[0] for x in target_user_history]
@@ -303,7 +304,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         ### find K neighbors <end>
         return K_neighbors
 
-    def recommend(self, target_user_history, N, K=10):
+    def recommend(self, target_user_history, N):
         '''@K: number of user neighbors considered
         '''
         rank = {}
@@ -311,7 +312,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         #print 'target_user_history:', target_user_history
         #print 'interacted_items:', interacted_items
 
-        K_neighbors = self.find_K_neighbors(target_user_history, K)
+        K_neighbors = self.find_K_neighbors(target_user_history, self.K)
 
         for v, wuv in K_neighbors:
         #for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
@@ -1453,6 +1454,57 @@ def exp_learning_rate():                             # @@CURRENT!!!!!!!!!!!!!!!!
     
     standard_process(table_name, para_combs, train, test, batch_words)
 
+
+
+def exp_iter():                             # @@CURRENT!!!!!!!!!!!!!!!!!!!!!!!!
+    """ exp: what will happen if iter changes
+    """
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+    
+    init_tfidf(data_filename, delimiter) # func of module utility_user_repr
+ 
+    seed = 2 
+    train_percent = 0.8
+    test_data_inner_ratio = 0.8
+    train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+    #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+    N = 20  # TopN
+    batch_words = 1000
+    table_name_prefix = 'metrics__chap4_exp_X_iter__N_%d___da_%s'
+    table_name = table_name_prefix % (N, data_set)
+    print 'table_name:', table_name
+
+    para_sg_list = ["skip-gram"]
+
+    para_variant_list = [ur__rating__tfidf]#ur_dict.keys()    # CAREFUL HERE!!!!
+    para_time_coef_list = [0]
+
+    para_comb_method_list = ['CF']
+
+    para_size_list = [100]#range(100, 501, 10)
+    #para_min_count_list = range(1, 100 + 1, 10)
+    para_min_count_list = [5]#range(0, 2400 + 1, 300)
+    #para_window_list = range(10, 100 + 1, 10)
+    para_window_list = [5]
+    para_learning_rate_list = [0.025]
+    para_iter_list = range(5,51,5)#[5]
+    para_K_list = [10]
+    para_topN_list = [20]
+
+
+    #para_combs = zip(para_size, para_min_count, para_window)
+    #para_combs = [[[(s, mc, w) for w in para_window] for mc in para_min_count] for s in para_size]
+    para_combs = [(sg, variant, time_coef, c_m, mc, w, s, l_r, para_iter, K, topN) for sg in para_sg_list for variant in para_variant_list for time_coef in para_time_coef_list for c_m in para_comb_method_list for mc in para_min_count_list for w in para_window_list for s in para_size_list for l_r in para_learning_rate_list for para_iter in para_iter_list for K in para_K_list for topN in para_topN_list]
+    #para_combs = [[220, 1, 3]]
+    #print para_combs[0]
+    print "len(para_combs):", len(para_combs)
+    
+    standard_process(table_name, para_combs, train, test, batch_words)
+
 def observe_min_count_and_window():
     ''' chap 4 exp 3 '''
     global arguments
@@ -1917,6 +1969,10 @@ def main():
         exp_learning_rate()
         return
     
+    if arguments['exp_iter']:
+        exp_iter()
+        return
+
     main_Linux()
     return
 
