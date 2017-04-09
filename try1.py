@@ -17,6 +17,7 @@ Usage:
   naval_fate.py exp_learning_rate
   naval_fate.py exp_iter
   naval_fate.py exp_K
+  naval_fate.py exp_K__simple_CF
 
   naval_fate.py ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.py ship shoot <x> <y>
@@ -313,7 +314,7 @@ class RecommendatorSystemViaCollaborativeFiltering(RecommendatorSystem):
         #print 'target_user_history:', target_user_history
         #print 'interacted_items:', interacted_items
 
-        K_neighbors = self.find_K_neighbors(target_user_history, self.K)
+        K_neighbors = self.find_K_neighbors(target_user_history)
 
         for v, wuv in K_neighbors:
         #for v, wuv in sorted(self.W[u].items(), key=lambda x: x[1], reverse=True)[0:K]: # wuv: similarity between user u and user v
@@ -1559,6 +1560,95 @@ def exp_K():                             # @@CURRENT!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
+def exp_K__simple_CF():
+    ''' exp: what will happen to simple CF if K (size of neighbor set) changes '''
+    global arguments
+
+    #data_filename, delimiter = os.path.sep.join(['ml-latest-small', 'ratings.csv']), ','
+    data_filename, delimiter, data_set = os.path.sep.join(['ml-1m', 'ratings.dat']), '::', '1M'
+    #data_filename, delimiter = os.path.sep.join(['ml-10M100K', 'ratings.dat']), '::'
+    #data_filename, delimiter, data_set = os.path.sep.join(['ml-100k', 'u.data']), '\t', '100K'
+    
+    init_tfidf(data_filename, delimiter) # func of module utility_user_repr
+ 
+    seed = 2 
+    #K = 10
+    train_percent = 0.8
+    test_data_inner_ratio = 0.8
+    #para_K_list = np.array(range(1,11,1)) * 5#[10]
+    para_K_list = np.array(range(3,11,1)) * 5#[10]    # Tricky: lower bound is 3!!!
+    
+    N = 20
+    table_name_prefix = 'metrics__chap4_exp_X_K__simple_CF__N_%d___da_%s'
+
+    cx = sqlite3.connect('my_metrics.db')
+    cur = cx.cursor()
+
+    table_name = table_name_prefix % (N, data_set)
+    print 'table_name:', table_name
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % table_name)
+    ret = cur.fetchall()
+    if 0 == len(ret):
+        sql = '''create table %s (
+  _row_ID integer	primary key autoincrement,
+  
+  K integer,
+
+  precision decimal(30, 28),
+  recall decimal(30, 28),
+  f1 decimal(30, 28),
+  
+  CreatedTime TimeStamp NOT NULL DEFAULT (datetime('now','localtime'))
+);''' % (table_name)
+        cur.execute(sql)
+        cx.commit()
+
+    for i, K in enumerate(para_K_list):
+        print "loop %d/%d" % (i, len(para_K_list))
+        #if (i < 215):
+        #    continue
+
+        train, test = extract_data_from_file_and_generate_train_and_test(data_filename, train_percent, seed, delimiter, test_data_inner_ratio)
+        #train, test = extract_data_from_file_and_generate_train_and_test(data_filename, 3, 0, seed, delimiter)
+
+        # Of course, data extraction time should not be included.
+        starttime = datetime.datetime.now()
+            
+        
+        rs = RecommendatorSystemViaCollaborativeFiltering()
+        #rs = RecommendatorSystemViaCollaborativeFiltering_UsingRedis()
+
+        rs.setup({
+            'train': train,
+            'K': K,
+        })
+    
+        endtime = datetime.datetime.now()
+        train_overhead = (endtime - starttime).seconds
+        print 'train time consumption: %d' % (train_overhead)
+
+        starttime = datetime.datetime.now()        
+
+        metrics = rs.calculate_metrics(train, test, N)
+        
+        endtime = datetime.datetime.now()
+        test_overhead = (endtime - starttime).seconds
+        print 'test time consumption: %d' % (test_overhead)
+        print metrics
+
+        precision, recall, f1 = metrics['precision'], metrics['recall'], metrics['f1']
+            
+        cur.execute('insert into %s (K, precision, recall, f1)' % (table_name) +
+                   "values (%d, %.19f, %.19f, %.19f)" % (K, precision, recall, f1))
+    
+        cx.commit()
+
+        #break  # for i, (s, mc, w) in enumerate(para_combs):
+    cur.close()
+    cx.close()
+
+
+
 def observe_min_count_and_window():
     ''' chap 4 exp 3 '''
     global arguments
@@ -2029,6 +2119,10 @@ def main():
 
     if arguments['exp_K']:
         exp_K()
+        return
+
+    if arguments['exp_K__simple_CF']:
+        exp_K__simple_CF()
         return
 
     main_Linux()
