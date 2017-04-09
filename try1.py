@@ -1711,7 +1711,7 @@ def exp_time_overhead():
     print "len(para_combs):", len(para_combs)
 
 
-    train_percent_list = [0.5, 0.6, 0.7, 0.8, 0.9]
+    train_percent_list = [0.5, 0.6, 0.7, 0.8]#, 0.9]
     test_fixed_ratio = 0.2
 
     ####
