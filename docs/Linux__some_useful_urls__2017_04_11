@@ -1,0 +1,130 @@
+pyplot scatter plot marker size
+M:
+M: Useful.
+http://stackoverflow.com/questions/14827650/pyplot-scatter-plot-marker-size
+
+Matplotlib 图例中文显示（大小修改） 
+M:
+M: Might be useful.
+http://blog.csdn.net/qq_28119401/article/details/50917653
+
+matplotlib-plot-style
+M: 里面提到了“柱状图及其填充”哦
+M: Might be useful.
+http://www.cnblogs.com/xilifeng/p/3917616.html
+
+Named colors in matplotlib
+M:
+M: Of high value.
+http://stackoverflow.com/questions/22408237/named-colors-in-matplotlib
+
+matplotlib - official document
+M:
+M: Useful.
+http://matplotlib.org/api/artist_api.html#matplotlib.patches.Patch.set_hatch
+
+pylab_examples example code: hatch_demo.py¶
+M: Hatch demo
+M: Useful.
+http://matplotlib.org/examples/pylab_examples/hatch_demo.html
+
+pandas.DataFrame.hist¶
+M: Pandas official document.
+M: Useful.
+http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.hist.html
+
+Using pandas on the MovieLens dataset
+M: Nice blog.
+M: Useful and might be interesting.
+http://www.gregreda.com/2013/10/26/using-pandas-on-the-movielens-dataset/
+
+Annotate bars with values on Pandas bar plots
+M:
+M: Useful.
+http://stackoverflow.com/questions/25447700/annotate-bars-with-values-on-pandas-bar-plots
+
+Python pandas / matplotlib annotating labels above bar chart columns
+M:
+M: Useful.
+http://stackoverflow.com/questions/23591254/python-pandas-matplotlib-annotating-labels-above-bar-chart-columns
+
+Simple customization of matplotlib/pandas bar chart (labels, ticks, etc.)
+M: Interesting.
+M: Might be useful.
+http://stackoverflow.com/questions/20600006/simple-customization-of-matplotlib-pandas-bar-chart-labels-ticks-etc
+
+How to create a bar chart/histogram with bar per discrete value?
+M: 
+M: Might be useful.
+http://stackoverflow.com/questions/18393887/how-to-create-a-bar-chart-histogram-with-bar-per-discrete-value/43296202
+
+Matplotlib - bar,scatter and histogram plots¶
+M:
+M: Might be useful.
+http://people.duke.edu/~ccc14/pcfb/numpympl/MatplotlibBarPlots.html
+
+how to generate histogram in pandas with x-axis labels from column?
+M:
+M: Might be useful.
+http://stackoverflow.com/questions/29230866/how-to-generate-histogram-in-pandas-with-x-axis-labels-from-column
+
+How to get rid of grid lines when plotting with Seaborn + Pandas with secondary_y
+M:
+M: Useful.
+http://stackoverflow.com/questions/26868304/how-to-get-rid-of-grid-lines-when-plotting-with-seaborn-pandas-with-secondary
+
+Turn off grid in a loglog graph with multiple axes
+M:
+M: Might be useful.
+http://stackoverflow.com/questions/15506166/turn-off-grid-in-a-loglog-graph-with-multiple-axes
+
+Matplotlib: plotting transparent histogram with non transparent edge
+M:
+M: Might be useful.
+http://stackoverflow.com/questions/28398200/matplotlib-plotting-transparent-histogram-with-non-transparent-edge
+
+1.4. Matplotlib: plotting
+M: Nice!!!
+M: Useful.
+http://www.scipy-lectures.org/intro/matplotlib/matplotlib.html#quick-references
+
+Saving a matplotlib.pyplot figure as a border-less frame-less image
+M:
+M: Useful.
+http://robotics.usc.edu/~ampereir/wordpress/?p=626
+
+Matplotlib: is there an rcParams way to adjust legend border width?
+M:
+M: Might be useful.
+http://stackoverflow.com/questions/38359008/matplotlib-is-there-an-rcparams-way-to-adjust-legend-border-width
+
+matplotlib border width
+M:
+M: Useful.
+http://stackoverflow.com/questions/1639463/matplotlib-border-width
+
+how to plot histograms from dataframes in pandas
+M:
+M: Might be useful.
+http://stackoverflow.com/questions/28654003/how-to-plot-histograms-from-dataframes-in-pandas
+
+plotly - Basic Histogram in Pandas
+M:
+M: Might be useful.
+https://plot.ly/pandas/histograms/
+
+How do I plot hatched bars using pandas?
+M:
+M: Might be useful.
+http://stackoverflow.com/questions/22833404/how-do-i-plot-hatched-bars-using-pandas
+
+Python 的Matplotlib 可以用不同图案填充histogram吗？
+M:
+M: Might be useful.
+https://www.zhihu.com/question/23540959/answer/25173435
+
+How can I add textures to my bars and wedges?
+M:
+M: Might be useful.
+http://stackoverflow.com/questions/14279344/how-can-i-add-textures-to-my-bars-and-wedges
+
